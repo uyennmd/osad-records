@@ -8,7 +8,7 @@ export async function getStaticPaths() {
   return songs.map(song => ({ params: { id: song.id }, props: { song } }));
 }
 const { song } = Astro.props;
-const { Content } = await render(song);
+const { Content } = song.fromGoogleSheet ? { Content: null } : await render(song);
 const d = song.data;
 const hasLyrics = Boolean(d.lyrics?.trim() || song.body?.trim());
 ---
@@ -79,7 +79,7 @@ const hasLyrics = Boolean(d.lyrics?.trim() || song.body?.trim());
 
     <h2>Lời bài hát</h2>
     <div class="lyrics-panel">
-      {d.lyrics?.trim() ? <p class="lyrics-text">{d.lyrics}</p> : hasLyrics ? <Content /> : <p class="lyrics-empty">Chưa có lời bài hát.</p>}
+      {d.lyrics?.trim() ? <p class="lyrics-text">{d.lyrics}</p> : Content && hasLyrics ? <Content /> : <p class="lyrics-empty">Chưa có lời bài hát.</p>}
     </div>
   </article>
 
