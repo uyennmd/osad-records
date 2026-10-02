@@ -5,7 +5,7 @@ Website lưu trữ bài hát và thông tin về OSAD, xây dựng bằng Astro.
 ## Yêu cầu
 
 - Git
-- Node.js 20 trở lên
+- Node.js 22.12 trở lên
 - npm (được cài kèm Node.js)
 
 ## Chạy trên máy mới

@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import { ClientRouter } from 'astro:transitions';
 const { title = 'OSAD Records' } = Astro.props;
 const path = Astro.url.pathname;
 const nav = [['/', 'Trang chủ'], ['/profile', 'Giới thiệu'], ['/timeline', 'Hành trình'], ['/songs', 'Bài hát'], ['/schedule', 'Lịch trình']];
@@ -11,6 +12,7 @@ const on = (h: string) => (h === '/' ? path === '/' : path.startsWith(h));
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#E8731A" />
     <title>{title === 'OSAD Records' ? title : `${title} · OSAD Records`}</title>
+    <ClientRouter fallback="swap" />
   </head>
   <body>
     <div class="shell">
