@@ -1,0 +1,16 @@
+---
+import Base from '../layouts/Base.astro';
+import p from '../data/profile.json';
+const rows = [['Tên thật', p.realName], ['Sinh nhật', p.birthday], ['Ra mắt', p.debut], ['Công ty', p.agency]].filter(r => r[1]);
+---
+<Base title="Profile">
+  <p class="kicker">Profile</p>
+  <h1>{p.name}</h1>
+  <p>{p.bio}</p>
+  {rows.length > 0 && <div class="panel"><dl style="display:grid;grid-template-columns:max-content 1fr;gap:.4rem 1.2rem;margin:0">
+    {rows.map(([k, v]) => <><dt class="mono muted">{k}</dt><dd style="margin:0">{v}</dd></>)}
+  </dl></div>}
+  {p.members.length > 0 && <><h2>Thành viên</h2><div class="row">{p.members.map(m => <span class="panel" style="padding:.3rem .9rem">{m}</span>)}</div></>}
+  <h2>Liên kết</h2>
+  <div class="row">{p.social.map(s => <a class="btn ghost" href={s.url} target="_blank" rel="noopener">{s.label}</a>)}</div>
+</Base>

@@ -1,0 +1,36 @@
+---
+import Base from '../layouts/Base.astro';
+import events from '../data/events.json';
+const start = new Date(); start.setDate(1); start.setHours(0, 0, 0, 0);
+const list = events.map(e => ({ ...e, d: new Date(e.date + 'T00:00:00') })).filter(e => e.d >= start).sort((a, b) => +a.d - +b.d);
+const groups = new Map<string, typeof list>();
+for (const e of list) {
+  const k = `Tháng ${e.d.getMonth() + 1}/${e.d.getFullYear()}`;
+  groups.set(k, [...(groups.get(k) ?? []), e]);
+}
+const wd = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+---
+<Base title="Lịch trình">
+  <p class="kicker">Schedule</p>
+  <h1>Lịch trình</h1>
+  {groups.size === 0 && <div class="empty">Chưa có sự kiện sắp tới.</div>}
+  {[...groups].map(([month, items]) => (
+    <section>
+      <h2 class="mono">{month}</h2>
+      {items.map(e => (
+        <div class="ev">
+          <div class="day"><b>{e.d.getDate()}</b><small>{wd[e.d.getDay()]}</small></div>
+          <div><b>{e.link ? <a href={e.link}>{e.title}</a> : e.title}</b>{e.place && <div class="muted">{e.place}</div>}</div>
+        </div>
+      ))}
+    </section>
+  ))}
+  <p class="muted" style="margin-top:2rem;font-size:.85rem">Thông tin có thể thay đổi, vui lòng kiểm tra lại nguồn chính thức.</p>
+  <style>
+    .ev { display:flex; gap:1rem; align-items:center; padding:.6rem 0; border-bottom:1px solid var(--sand); }
+    .day { width:58px; flex:none; background:var(--ink); color:var(--cream); border-radius:10px; text-align:center; padding:.35rem 0; }
+    .day b { display:block; font-size:1.4rem; line-height:1.1; }
+    .day small { font-family:var(--mono); color:var(--amber); }
+  </style>
+</Base>
+

@@ -1,0 +1,30 @@
+---
+import '../styles/global.css';
+const { title = 'OSAD Records' } = Astro.props;
+const path = Astro.url.pathname;
+const nav = [['/', 'Trang chủ'], ['/profile', 'Giới thiệu'], ['/timeline', 'Hành trình'], ['/songs', 'Bài hát'], ['/schedule', 'Lịch trình']];
+const on = (h: string) => (h === '/' ? path === '/' : path.startsWith(h));
+---
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#E8731A" />
+    <title>{title === 'OSAD Records' ? title : `${title} · OSAD Records`}</title>
+  </head>
+  <body>
+    <div class="shell">
+      <aside class="side">
+        <a class="logo" href="/"><span class="disc"></span><span><b>OSAD</b><small>RECORDS</small></span></a>
+        <nav>{nav.map(([href, label], i) => <a href={href} class={on(href) ? 'on' : ''}><span>{String(i + 1).padStart(2, '0')}</span>{label}</a>)}</nav>
+        <p class="note">Fan archive phi lợi nhuận.</p>
+      </aside>
+      <div>
+        <main>
+          <slot />
+          <p class="foot">Bản quyền ca khúc, hình ảnh và bản ghi thuộc về nghệ sĩ và đơn vị sở hữu tương ứng. OSAD Records là trang lưu giữ kỷ niệm của fan, không đại diện cho các bên liên quan.</p>
+        </main>
+      </div>
+    </div>
+  </body>
+</html>

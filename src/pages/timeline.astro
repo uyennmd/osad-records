@@ -1,0 +1,32 @@
+---
+import Base from '../layouts/Base.astro';
+import { getSongs, fmtDate } from '../lib/songs';
+const songs = await getSongs();
+const years = [...new Set(songs.map(s => s.data.releaseDate.getFullYear()))];
+---
+<Base title="Timeline">
+  <p class="kicker">Timeline</p>
+  <h1>Hành trình âm nhạc</h1>
+  {songs.length === 0 && <div class="empty">Chưa có bài hát nào.</div>}
+  <div class="tl">
+    {years.map(y => (
+      <section>
+        <h2 class="year">{y}</h2>
+        {songs.filter(s => s.data.releaseDate.getFullYear() === y).map(s => (
+          <a class="item" href={`/songs/${s.id}`}>
+            <span class="mono muted">{fmtDate(s.data.releaseDate)} · {s.cat}</span>
+            <b>{s.data.title}</b>
+            {s.data.album && <span class="muted">{s.data.album}</span>}
+          </a>
+        ))}
+      </section>
+    ))}
+  </div>
+  <style>
+    .tl { border-left:3px solid var(--amber); margin-left:.4rem; padding-left:1.4rem; }
+    .year { font-family:var(--mono); color:var(--amber-d); margin-top:1.8rem; }
+    .item { position:relative; display:flex; flex-direction:column; padding:.5rem 0 .9rem; color:var(--ink); text-decoration:none; }
+    .item::before { content:''; position:absolute; left:-1.95rem; top:.85rem; width:12px; height:12px; border-radius:50%; background:var(--cream); border:3px solid var(--amber); }
+    .item:hover b { color:var(--amber-d); }
+  </style>
+</Base>

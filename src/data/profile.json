@@ -1,0 +1,13 @@
+{
+  "name": "OSAD",
+  "realName": "",
+  "birthday": "",
+  "debut": "",
+  "agency": "",
+  "bio": "Viết giới thiệu về OSAD ở đây.",
+  "members": [],
+  "social": [
+    { "label": "YouTube", "url": "https://youtube.com" },
+    { "label": "Instagram", "url": "https://instagram.com" }
+  ]
+}

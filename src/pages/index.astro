@@ -1,0 +1,48 @@
+---
+import Base from '../layouts/Base.astro';
+import events from '../data/events.json';
+import profile from '../data/profile.json';
+import { getSongs, fmtDate } from '../lib/songs';
+const songs = await getSongs();
+const latest = songs.at(-1);
+const today = new Date(); today.setHours(0, 0, 0, 0);
+const next = events.filter(e => new Date(e.date) >= today).sort((a, b) => a.date.localeCompare(b.date))[0];
+---
+<Base>
+  <section class="hero">
+    <div class="hero-copy">
+      <p class="kicker">Fan archive</p>
+      <h1>{profile.name}<br /><span class="accent">Records.</span></h1>
+      <p class="lead">Nơi lưu giữ những bản nhạc, khoảnh khắc và ký ức về {profile.name}.</p>
+      <div class="row actions">
+        <a class="btn" href="/songs">Mở kho nhạc</a>
+        <a class="btn ghost" href="/schedule">Xem lịch trình</a>
+      </div>
+    </div>
+
+    <div class="hero-aside">
+      <div class="feature-card">
+        <p class="kicker small">Gần đây</p>
+        {latest ? (
+          <>
+            <h3><a href={`/songs/${latest.id}`}>{latest.data.title}</a></h3>
+            <p class="muted mono">{latest.cat} · {fmtDate(latest.data.releaseDate)}</p>
+          </>
+        ) : (
+          <p class="muted">Chưa có bài hát.</p>
+        )}
+      </div>
+    </div>
+  </section>
+
+  <section class="info-grid">
+    <div class="panel">
+      <p class="kicker">Phát hành mới nhất</p>
+      {latest ? <><h3><a href={`/songs/${latest.id}`}>{latest.data.title}</a></h3><p class="muted mono">{latest.cat} · {fmtDate(latest.data.releaseDate)}</p></> : <p class="muted">Chưa có bài hát.</p>}
+    </div>
+    <div class="panel">
+      <p class="kicker">Sự kiện sắp tới</p>
+      {next ? <><h3>{next.title}</h3><p class="muted mono">{next.date}{next.place ? ` · ${next.place}` : ''}</p></> : <p class="muted">Chưa có sự kiện.</p>}
+    </div>
+  </section>
+</Base>
