@@ -17,7 +17,6 @@ const songs = defineCollection({
     credits: z.array(z.object({ role: z.string(), name: z.string() })).default([]),
     lyrics: z.string().optional(),
     lyricsUrl: z.string().url().optional(), // khuyên dùng link thay vì đăng lời (bản quyền)
-    notes: z.string().optional(),
     type: z.enum(['solo', 'guest', 'featured', 'collab', 'other']).optional(),
     mainArtist: z.string().optional(),
     partner_1: z.string().optional(),

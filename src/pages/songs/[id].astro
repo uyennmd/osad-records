@@ -88,10 +88,10 @@ const artistDisplay = (() => {
         <div class="panel">
           <dl class="credits-list">
             {d.credits.map((credit) => (
-              <>
+              <div class="credit-item">
                 <dt class="mono muted">{credit.role}</dt>
                 <dd>{credit.name}</dd>
-              </>
+              </div>
             ))}
           </dl>
         </div>
@@ -120,13 +120,6 @@ const artistDisplay = (() => {
       </div>
     ) : (
       <div class="empty">Chưa có link.</div>
-    )}
-
-    {d.notes?.trim() && (
-      <>
-        <h2>Ghi chú</h2>
-        <div class="notes-panel panel"><p class="lyrics-text">{d.notes}</p></div>
-      </>
     )}
 
     <h2>Lời bài hát</h2>
@@ -231,12 +224,17 @@ const artistDisplay = (() => {
     .stream-links { display:flex; flex-wrap:wrap; gap:.8rem; }
     .credits-list {
       display:grid;
-      grid-template-columns:max-content 1fr;
-      gap:.3rem 1.2rem;
+      grid-template-columns:repeat(3, minmax(0, 1fr));
+      gap:1rem;
       margin:0;
     }
-    .credits-list dd { margin:0; }
-    .lyrics-text, .notes-panel p {
+    .credit-item dt {
+      margin-bottom:.25rem;
+      font-size:.75rem;
+      letter-spacing:.04em;
+    }
+    .credit-item dd { margin:0; font-weight:700; overflow-wrap:anywhere; }
+    .lyrics-text {
       white-space:pre-wrap;
       line-height:1.7;
     }

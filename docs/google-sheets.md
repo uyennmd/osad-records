@@ -28,7 +28,7 @@ Tab có một dòng tiêu đề và mỗi dòng tiếp theo là một bài hát.
 theo schema:
 
 ```text
-slug, title, releaseDate, album, cover, lyricsUrl, lyrics, notes, type,
+slug, title, releaseDate, album, cover, lyricsUrl, lyrics, type,
 mainArtist, partner_1, partner_2, partner_3
 ```
 
@@ -53,8 +53,8 @@ Google Sheets.
 - `releaseDate` dùng `YYYY-MM-DD` hoặc `DD/MM/YYYY`.
 - `type` có thể để trống; nếu nhập, chỉ chấp nhận `solo`, `guest`, `featured`,
   `collab` hoặc `other`.
-- Ô trống ở cột tùy chọn được coi là không có giá trị. `lyrics` và `notes` giữ
-  nguyên xuống dòng; Google Sheets cho xuống dòng bên trong ô bằng Alt+Enter.
+- Ô trống ở cột tùy chọn được coi là không có giá trị. `lyrics` giữ nguyên
+  xuống dòng; Google Sheets cho xuống dòng bên trong ô bằng Alt+Enter.
 - Sheet phải có ít nhất một bài hát có slug. Lỗi tải sheet, tiêu đề, slug trùng
   hoặc sai định dạng, ngày sai và `type` không hợp lệ đều làm build dừng; lỗi
   dữ liệu nêu số dòng trong sheet.

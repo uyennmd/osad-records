@@ -19,7 +19,6 @@ type SongData = {
   cover?: string;
   lyricsUrl?: string;
   lyrics?: string;
-  notes?: string;
   type?: 'solo' | 'guest' | 'featured' | 'collab' | 'other';
   mainArtist?: string;
   partner_1?: string;
@@ -223,7 +222,6 @@ function makeSongData(
     cover: optionalCell(row.cover),
     lyricsUrl,
     lyrics: optionalCell(row.lyrics),
-    notes: optionalCell(row.notes),
     type: rawType,
     mainArtist: optionalCell(row.mainArtist),
     partner_1: optionalCell(row.partner_1),
