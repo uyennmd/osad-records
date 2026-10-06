@@ -23,7 +23,7 @@ Mở địa chỉ được Astro in ra trong terminal, thường là <http://loc
 
 Mặc định, website đọc bài hát trong `src/content/songs/`. Có thể thêm bài mới bằng file Markdown theo cấu trúc của `vi-du-bai-hat.md`.
 
-Để lấy dữ liệu từ Google Sheets thay vì Markdown, tạo file `.env` từ `.env.example`, điền `GOOGLE_SHEETS_ID`, rồi cấp quyền xem cho spreadsheet. Xem cấu trúc các tab và cột tại [docs/google-sheets.md](docs/google-sheets.md). Không commit file `.env` vì nó chứa cấu hình riêng của máy.
+Để lấy dữ liệu từ Google Sheets thay vì Markdown, tạo file `.env` từ `.env.example`, điền `GOOGLE_SHEETS_ID` và cấp quyền Viewer cho người có liên kết. Có thể đặt `GOOGLE_SHEETS_TAB` (mặc định `Songs`). Sheet dùng một tab duy nhất; ngoài các cột cố định, link và credit được khai báo bằng các cột `link_<nền tảng>` và `credit_<vai trò>`. Xem đầy đủ danh sách cột, các giá trị `type`, hướng dẫn cấu hình Vercel và Deploy Hook tại [docs/google-sheets.md](docs/google-sheets.md); file mẫu để nhập là [docs/songs-template.csv](docs/songs-template.csv). Không commit file `.env` vì nó chứa cấu hình riêng của máy.
 
 ## Build và xem bản build
 

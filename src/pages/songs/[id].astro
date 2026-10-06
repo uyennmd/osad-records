@@ -8,9 +8,38 @@ export async function getStaticPaths() {
   return songs.map(song => ({ params: { id: song.id }, props: { song } }));
 }
 const { song } = Astro.props;
-const { Content } = song.fromGoogleSheet ? { Content: null } : await render(song);
+const { Content } = typeof song.body === 'string' ? await render(song) : { Content: null };
 const d = song.data;
 const hasLyrics = Boolean(d.lyrics?.trim() || song.body?.trim());
+
+const typeLabels = {
+  solo: 'Solo',
+  guest: 'Có khách mời',
+  featured: 'Tham gia feat',
+  collab: 'Song ca / hợp tác',
+  other: 'Khác',
+};
+
+const artistDisplay = (() => {
+  const partners = [d.partner_1, d.partner_2, d.partner_3].filter(Boolean);
+  const relatedArtists = [...new Set([d.mainArtist, ...partners].filter(Boolean))];
+  switch (d.type) {
+    case 'solo':
+      return ['OSAD', ...relatedArtists].join(', ');
+    case 'guest':
+      return relatedArtists.length > 0 ? `OSAD ft. ${relatedArtists.join(', ')}` : 'OSAD';
+    case 'featured':
+      return d.mainArtist
+        ? `${d.mainArtist} ft. OSAD${partners.length ? ` · ${partners.join(', ')}` : ''}`
+        : ['OSAD', ...partners].join(', ');
+    case 'collab':
+      return ['OSAD', ...relatedArtists].join(' x ');
+    case 'other':
+      return ['OSAD', ...relatedArtists].join(', ');
+    default:
+      return relatedArtists.length ? relatedArtists.join(', ') : 'OSAD';
+  }
+})();
 ---
 <Base title={d.title}>
   <article class="song-detail-shell">
@@ -32,21 +61,42 @@ const hasLyrics = Boolean(d.lyrics?.trim() || song.body?.trim());
 
     <section aria-labelledby="song-info-title">
       <h2 id="song-info-title">Thông tin bài hát</h2>
-      <dl class="song-info">
-        <div class="info-item">
-          <dt>Tên bài hát</dt>
-          <dd>{d.title}</dd>
-        </div>
-        <div class="info-item">
+      <div class="song-info">
+        <div class="info-item meta-card">
           <dt>Ngày phát hành</dt>
           <dd>{fmtDate(d.releaseDate)}</dd>
         </div>
-        <div class="info-item">
+        <div class="info-item meta-card">
           <dt>Album</dt>
           <dd>{d.album || 'Chưa cập nhật'}</dd>
         </div>
-      </dl>
+        <div class="info-item meta-card">
+          <dt>Thể loại</dt>
+          <dd>{d.type ? typeLabels[d.type] : 'Chưa cập nhật'}</dd>
+        </div>
+      </div>
+
+      <div class="info-item artist-card">
+        <dt>Nghệ sĩ</dt>
+        <dd>{artistDisplay || 'Chưa cập nhật'}</dd>
+      </div>
     </section>
+
+    {d.credits.length > 0 && (
+      <>
+        <h2>Credit</h2>
+        <div class="panel">
+          <dl class="credits-list">
+            {d.credits.map((credit) => (
+              <>
+                <dt class="mono muted">{credit.role}</dt>
+                <dd>{credit.name}</dd>
+              </>
+            ))}
+          </dl>
+        </div>
+      </>
+    )}
 
     <h2>Nghe nhạc</h2>
     {d.links.length > 0 ? (
@@ -72,10 +122,12 @@ const hasLyrics = Boolean(d.lyrics?.trim() || song.body?.trim());
       <div class="empty">Chưa có link.</div>
     )}
 
-    <h2>Credit</h2>
-    {d.credits.length > 0 ? <div class="panel"><dl style="display:grid;grid-template-columns:max-content 1fr;gap:.3rem 1.2rem;margin:0">
-      {d.credits.map(c => <><dt class="mono muted">{c.role}</dt><dd style="margin:0">{c.name}</dd></>)}
-    </dl></div> : <div class="empty">Chưa có credit.</div>}
+    {d.notes?.trim() && (
+      <>
+        <h2>Ghi chú</h2>
+        <div class="notes-panel panel"><p class="lyrics-text">{d.notes}</p></div>
+      </>
+    )}
 
     <h2>Lời bài hát</h2>
     <div class="lyrics-panel">
@@ -132,23 +184,42 @@ const hasLyrics = Boolean(d.lyrics?.trim() || song.body?.trim());
       display:grid;
       grid-template-columns:repeat(3, minmax(0, 1fr));
       gap:.8rem;
-      margin:0;
+      margin:0 0 .8rem;
     }
     .info-item {
       min-width:0;
       padding:1rem 1.1rem;
-      border:1px solid rgba(229,202,176,0.76);
-      border-radius:14px;
-      background:rgba(255,255,255,0.42);
+      border:1.5px solid #EA580C;
+      border-radius:16px;
+      background:rgba(255,255,255,0.36);
+      box-shadow:inset 0 0 0 1px rgba(234, 88, 12, 0.05), 0 8px 20px rgba(69,41,22,0.04);
+    }
+    .meta-card {
+      min-height:108px;
+    }
+    .artist-card {
+      min-height:128px;
+      background:linear-gradient(180deg, rgba(255,255,255,0.52), rgba(255,247,241,0.7));
     }
     .info-item dt {
       margin-bottom:.35rem;
       color:var(--muted);
       font-family:var(--mono);
       font-size:.72rem;
+      letter-spacing:.08em;
       text-transform:uppercase;
     }
-    .info-item dd { margin:0; font-weight:700; overflow-wrap:anywhere; }
+    .info-item dd {
+      margin:0;
+      font-weight:700;
+      line-height:1.6;
+      overflow-wrap:anywhere;
+      white-space:normal;
+    }
+    .artist-card dd {
+      font-size:1.06rem;
+      line-height:1.8;
+    }
     .cover {
       width:180px;
       height:180px;
@@ -158,6 +229,17 @@ const hasLyrics = Boolean(d.lyrics?.trim() || song.body?.trim());
       place-items:center;
     }
     .stream-links { display:flex; flex-wrap:wrap; gap:.8rem; }
+    .credits-list {
+      display:grid;
+      grid-template-columns:max-content 1fr;
+      gap:.3rem 1.2rem;
+      margin:0;
+    }
+    .credits-list dd { margin:0; }
+    .lyrics-text, .notes-panel p {
+      white-space:pre-wrap;
+      line-height:1.7;
+    }
     .stream-link {
       position:relative;
       display:inline-flex;
@@ -208,6 +290,9 @@ const hasLyrics = Boolean(d.lyrics?.trim() || song.body?.trim());
     }
     .lyrics-text, .lyrics-empty { margin:0; white-space:pre-wrap; }
     .lyrics-empty { color:var(--muted); font-style:italic; }
+    @media (max-width:900px) {
+      .song-info { grid-template-columns:repeat(2, minmax(0, 1fr)); }
+    }
     @media (max-width:620px) {
       .song-info { grid-template-columns:1fr; }
       .cover { width:min(180px, 48vw); height:min(180px, 48vw); }
