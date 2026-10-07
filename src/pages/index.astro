@@ -72,7 +72,8 @@ const songTypeLabels = { solo: 'Solo', collab: 'Collab', featured: 'Featured', o
     position:relative;
     isolation:isolate;
     min-height:min(690px, calc(100svh - 72px));
-    overflow:hidden;
+    overflow-x:clip;
+    overflow-y:visible;
     background:var(--amber);
   }
   .poster-grain {
@@ -100,9 +101,9 @@ const songTypeLabels = { solo: 'Solo', collab: 'Collab', featured: 'Featured', o
   .poster-vinyl {
     position:absolute;
     z-index:0;
-    top:clamp(-90px, -7vw, -36px);
+    top:0;
     right:clamp(-250px, -15vw, -90px);
-    width:clamp(510px, 58vw, 790px);
+    width:clamp(510px, 48vw, 680px);
     aspect-ratio:1;
     border:2px solid rgba(255,196,107,.12);
     border-radius:50%;

@@ -21,14 +21,16 @@ const on = (h: string) => (h === '/' ? path === '/' : path.startsWith(h));
           <span class="disc" aria-hidden="true"></span>
           <span>OSAD Records</span>
         </a>
-        <details class="nav-menu">
-          <summary aria-label="Mở menu điều hướng"><span class="menu-icon" aria-hidden="true"></span>Menu</summary>
-          <nav class="top-nav" aria-label="Điều hướng chính">
+        <div class="nav-menu">
+          <button class="menu-toggle" type="button" aria-label="Mở menu điều hướng" aria-expanded="false" aria-controls="primary-navigation">
+            <span class="menu-icon" aria-hidden="true"></span>Menu
+          </button>
+          <nav class="top-nav" id="primary-navigation" aria-label="Điều hướng chính">
             {nav.map(([href, label]) => (
               <a href={href} aria-current={on(href) ? 'page' : undefined}>{label}</a>
             ))}
           </nav>
-        </details>
+        </div>
       </header>
       <div>
         <main>
@@ -37,5 +39,40 @@ const on = (h: string) => (h === '/' ? path === '/' : path.startsWith(h));
         </main>
       </div>
     </div>
+    <script>
+      const initializedMenus = new WeakSet<HTMLElement>();
+
+      function initializeNavigationMenus() {
+        document.querySelectorAll<HTMLElement>('.nav-menu').forEach(menu => {
+          if (initializedMenus.has(menu)) return;
+          initializedMenus.add(menu);
+
+          const button = menu.querySelector<HTMLButtonElement>('.menu-toggle');
+          if (!button) return;
+
+          const setOpen = (open: boolean) => {
+            menu.classList.toggle('is-open', open);
+            button.setAttribute('aria-expanded', String(open));
+            button.setAttribute('aria-label', open ? 'Đóng menu điều hướng' : 'Mở menu điều hướng');
+          };
+
+          button.addEventListener('click', () => {
+            setOpen(button.getAttribute('aria-expanded') !== 'true');
+          });
+          menu.querySelectorAll<HTMLAnchorElement>('.top-nav a').forEach(link => {
+            link.addEventListener('click', () => setOpen(false));
+          });
+          menu.addEventListener('keydown', event => {
+            if (event.key === 'Escape') {
+              setOpen(false);
+              button.focus();
+            }
+          });
+        });
+      }
+
+      initializeNavigationMenus();
+      document.addEventListener('astro:page-load', initializeNavigationMenus);
+    </script>
   </body>
 </html>
