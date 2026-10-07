@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import VinylDisc from '../components/VinylDisc.astro';
 import { ClientRouter } from 'astro:transitions';
 const { title = 'OSAD Records' } = Astro.props;
 const path = Astro.url.pathname;
@@ -18,7 +19,7 @@ const on = (h: string) => (h === '/' ? path === '/' : path.startsWith(h));
     <div class="shell">
       <header class="site-header">
         <a class="logo" href="/" aria-label="OSAD Records - Trang chủ">
-          <span class="disc" aria-hidden="true"></span>
+          <VinylDisc alt="" />
           <span>OSAD Records</span>
         </a>
         <div class="nav-menu">

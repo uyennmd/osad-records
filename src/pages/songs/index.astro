@@ -3,7 +3,7 @@ import { getCollection } from 'astro:content';
 import Badge from '../../components/Badge.astro';
 import ListToolbar from '../../components/ListToolbar.astro';
 import Pagination from '../../components/Pagination.astro';
-import VinylRecord from '../../components/VinylRecord.astro';
+import VinylDisc from '../../components/VinylDisc.astro';
 import Base from '../../layouts/Base.astro';
 import { getArtistDisplay } from '../../lib/songs';
 
@@ -70,7 +70,7 @@ const selectedView = Astro.url.searchParams.get('view') === 'list' ? 'list' : 'g
                     <div class="song-grid-content">
                       <a href={`/songs/${song.id}`} class="cover-link" aria-label={`Xem bài hát ${data.title}`}>
                         <div class="cover-art">
-                          <VinylRecord cover={data.cover} alt={`Ảnh album ${data.album || data.title}`} />
+                          <VinylDisc cover={data.cover} alt={data.title} />
                         </div>
                       </a>
                       <div class="song-grid-meta">
@@ -84,7 +84,7 @@ const selectedView = Astro.url.searchParams.get('view') === 'list' ? 'list' : 'g
                     </div>
                     <div class="song-list-content">
                       <a href={`/songs/${song.id}`} class="list-cover cover-link" aria-label={`Xem bài hát ${data.title}`}>
-                        <VinylRecord cover={data.cover} alt={`Ảnh album ${data.album || data.title}`} />
+                        <VinylDisc cover={data.cover} alt={data.title} />
                       </a>
                       <div class="list-song-copy">
                         <h3><a href={`/songs/${song.id}`}>{data.title}</a></h3>
@@ -150,8 +150,8 @@ const selectedView = Astro.url.searchParams.get('view') === 'list' ? 'list' : 'g
     .song-list-content { display:none; }
     .song-groups.list-view .song-grid-content { display:none; }
     .song-groups.list-view .song-list-content { display:flex; min-height:64px; align-items:center; gap:12px; padding:8px 12px; }
-    .list-cover { width:48px; flex:none; }
-    .list-cover .album-vinyl { width:48px; box-shadow:none; }
+    .list-cover { width:56px; flex:none; }
+    .list-cover .album-vinyl { width:56px; box-shadow:0 3px 6px rgba(43,26,16,.3); }
     .list-song-copy { min-width:0; flex:1 1 auto; }
     .list-song-copy h3 { overflow-wrap:anywhere; }
     .list-song-type, .list-song-year { width:78px; flex:none; text-align:center; }
@@ -165,7 +165,6 @@ const selectedView = Astro.url.searchParams.get('view') === 'list' ? 'list' : 'g
       .song-grid-content { padding:8px; }
       .song-grid-meta h3 { font-size:.82rem; }
       .song-groups.list-view .song-list-content { gap:8px; padding:8px; }
-      .list-cover, .list-cover .album-vinyl { width:44px; }
       .list-song-type, .list-song-year { width:auto; }
     }
   </style>

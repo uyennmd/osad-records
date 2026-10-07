@@ -2,7 +2,7 @@
 import Base from '../../layouts/Base.astro';
 import { render } from 'astro:content';
 import Badge from '../../components/Badge.astro';
-import VinylRecord from '../../components/VinylRecord.astro';
+import VinylDisc from '../../components/VinylDisc.astro';
 import { getSongs, fmtDate } from '../../lib/songs';
 import { getArtistDisplay } from '../../lib/songs';
 import { getPlatformConfig } from '../../lib/platforms';
@@ -23,7 +23,7 @@ const typeLabels = { solo: 'Solo', collab: 'Collab', featured: 'Featured', other
     <p class="back-link"><a href="/songs">← Kho nhạc</a></p>
     <div class="head">
       <div class="cover">
-        <VinylRecord cover={d.cover} alt={`Ảnh album ${d.album || d.title}`} loading="eager" />
+        <VinylDisc cover={d.cover} alt={d.title} />
       </div>
       <div class="title-block">
         <p class="kicker">{song.cat}</p>
