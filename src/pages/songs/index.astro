@@ -41,10 +41,8 @@ const selectedView = Astro.url.searchParams.get('view') === 'list' ? 'list' : 'g
       searchPlaceholder="Tìm tên bài, album, nghệ sĩ..."
       showView
       view={selectedView}
+      pageSize={selectedView === 'list' ? 10 : 12}
     />
-    <p class="list-status" data-list-status aria-live="polite">
-      Hiển thị {Math.min(songs.length, selectedView === 'list' ? 10 : 12) ? 1 : 0} đến {Math.min(songs.length, selectedView === 'list' ? 10 : 12)} / {songs.length}
-    </p>
     <div class="list-container">
       <div class={`song-groups ${selectedView === 'list' ? 'list-view' : 'grid-view'}`} data-list-items data-active-view={selectedView}>
         {songsByYear.map(({ year, songs: yearSongs }) => (

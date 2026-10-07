@@ -20,6 +20,7 @@ function initializeRoot(root: HTMLElement): void {
   const sortSelect = root.querySelector<HTMLSelectElement>('[data-sort-control]');
   const itemsContainer = root.querySelector<HTMLElement>('[data-list-items]');
   const status = root.querySelector<HTMLElement>('[data-list-status]');
+  const clearFiltersButton = root.querySelector<HTMLButtonElement>('.clear-filters-link');
   const pagination = root.querySelector<HTMLElement>('[data-pagination]');
   const emptyState = root.querySelector<HTMLElement>('[data-list-empty]');
   const items = itemsContainer
@@ -129,6 +130,9 @@ function initializeRoot(root: HTMLElement): void {
       const from = filtered.length ? start + 1 : 0;
       const to = filtered.length ? Math.min(start + pageSize, filtered.length) : 0;
       status.textContent = `Hiển thị ${from} đến ${to} / ${root.dataset.totalItems ?? items.length}`;
+    }
+    if (clearFiltersButton) {
+      clearFiltersButton.hidden = !(state.q.trim() || state.type || state.year);
     }
 
     if (pagination) {

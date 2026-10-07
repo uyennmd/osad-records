@@ -19,6 +19,7 @@ interface Props {
   showView?: boolean;
   view?: 'grid' | 'list';
   defaultSort?: string;
+  pageSize?: number;
 }
 
 const {
@@ -30,6 +31,7 @@ const {
   showView = false,
   view = 'grid',
   defaultSort = 'newest',
+  pageSize = 10,
 } = Astro.props;
 const search = Astro.url.searchParams.get('q') ?? '';
 const selectedType = Astro.url.searchParams.get('type') ?? '';
@@ -38,46 +40,68 @@ const selectedSort = Astro.url.searchParams.get('sort') ?? defaultSort;
 const selectedView = Astro.url.searchParams.get('view') === 'list' ? 'list' : view;
 ---
 <div class="list-toolbar" data-list-toolbar>
-  <label class="search-control">
-    <span class="visually-hidden">Tìm kiếm</span>
-    <input type="search" data-search-input placeholder={searchPlaceholder} value={search} />
-  </label>
-  {typeOptions.length > 0 && (
-    <div class="type-filters" role="group" aria-label="Lọc theo loại">
-      <button type="button" class="type-filter" data-type-filter="" aria-pressed={selectedType === ''}>
-        All <span>{total}</span>
-      </button>
-      {typeOptions.map(option => (
-        <button
-          type="button"
-          class="type-filter"
-          data-type-filter={option.value}
-          aria-pressed={selectedType === option.value}
-        >
-          {option.label} <span>{option.count}</span>
+  <div class="toolbar-primary">
+    <label class="search-control">
+      <span class="visually-hidden">Tìm kiếm</span>
+      <input type="search" data-search-input placeholder={searchPlaceholder} value={search} />
+    </label>
+    {showView && (
+      <div class="view-switch toolbar-view" role="group" aria-label="Kiểu hiển thị">
+        <button type="button" data-view-control="grid" aria-pressed={selectedView === 'grid'}>Lưới</button>
+        <button type="button" data-view-control="list" aria-pressed={selectedView === 'list'}>Danh sách</button>
+      </div>
+    )}
+  </div>
+  <div class="toolbar-secondary">
+    {typeOptions.length > 0 && (
+      <div class="type-filters" role="group" aria-label="Lọc theo loại">
+        <button type="button" class="type-filter" data-type-filter="" aria-pressed={selectedType === ''}>
+          All <span>{total}</span>
         </button>
-      ))}
+        {typeOptions.map(option => (
+          <button
+            type="button"
+            class="type-filter"
+            data-type-filter={option.value}
+            aria-pressed={selectedType === option.value}
+          >
+            {option.label} <span>{option.count}</span>
+          </button>
+        ))}
+      </div>
+    )}
+    <div class="toolbar-selects">
+      <label class="select-control">
+        <span class="visually-hidden">Lọc theo năm</span>
+        <select data-year-filter aria-label="Năm">
+          <option value="" selected={selectedYear === ''}>Năm: Tất cả</option>
+          {years.map(year => <option value={year} selected={selectedYear === String(year)}>{year}</option>)}
+        </select>
+      </label>
+      <label class="select-control">
+        <span class="visually-hidden">Sắp xếp</span>
+        <select data-sort-control aria-label="Sắp xếp">
+          {sortOptions.map(option => <option value={option.value} selected={selectedSort === option.value}>{option.label}</option>)}
+        </select>
+      </label>
     </div>
-  )}
-  <label class="select-control">
-    <span class="visually-hidden">Lọc theo năm</span>
-    <select data-year-filter aria-label="Năm">
-      <option value="" selected={selectedYear === ''}>Năm: Tất cả</option>
-      {years.map(year => <option value={year} selected={selectedYear === String(year)}>{year}</option>)}
-    </select>
-  </label>
-  <label class="select-control">
-    <span class="visually-hidden">Sắp xếp</span>
-    <select data-sort-control aria-label="Sắp xếp">
-      {sortOptions.map(option => <option value={option.value} selected={selectedSort === option.value}>{option.label}</option>)}
-    </select>
-  </label>
-  {showView && (
-    <div class="view-switch" role="group" aria-label="Kiểu hiển thị">
-      <button type="button" data-view-control="grid" aria-pressed={selectedView === 'grid'}>Lưới</button>
-      <button type="button" data-view-control="list" aria-pressed={selectedView === 'list'}>Danh sách</button>
+  </div>
+  <div class="toolbar-status-row">
+    <p class="list-status" data-list-status aria-live="polite">
+      Hiển thị {total ? 1 : 0} đến {Math.min(total, pageSize)} / {total}
+    </p>
+    <div class="toolbar-status-actions">
+      <button type="button" class="clear-filters-link" data-clear-filters hidden={!search && !selectedType && !selectedYear}>
+        Xóa bộ lọc
+      </button>
+      {showView && (
+        <div class="view-switch toolbar-view-mobile" role="group" aria-label="Kiểu hiển thị">
+          <button type="button" data-view-control="grid" aria-pressed={selectedView === 'grid'}>Lưới</button>
+          <button type="button" data-view-control="list" aria-pressed={selectedView === 'list'}>Danh sách</button>
+        </div>
+      )}
     </div>
-  )}
+  </div>
 </div>
 <script>
   import { initializeListControls } from '../scripts/list-controls';

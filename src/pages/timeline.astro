@@ -44,10 +44,8 @@ const isVideo = (url?: string) => Boolean(url && /(?:youtube\.com|youtu\.be|vime
       ]}
       defaultSort={selectedSort}
       searchPlaceholder="Tìm theo tiêu đề..."
+      pageSize={10}
     />
-    <p class="list-status" data-list-status aria-live="polite">
-      Hiển thị {journey.length ? 1 : 0} đến {Math.min(journey.length, 10)} / {journey.length}
-    </p>
     {journey.length ? (
       <div class="journey-list" data-list-items>
         {journeyByYear.map(({ year, items }) => (
