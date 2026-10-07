@@ -28,7 +28,7 @@ const types = [
 const selectedView = Astro.url.searchParams.get('view') === 'list' ? 'list' : 'grid';
 ---
 <Base title="Bài hát">
-  <section class="songs-page" data-list-root data-total-items={songs.length} data-default-sort="newest" data-default-view="grid" data-page-sizes="grid:12,list:10">
+  <section class="songs-page" data-list-root data-active-view={selectedView} data-total-items={songs.length} data-default-sort="newest" data-default-view="grid" data-page-sizes="grid:12,list:10">
     <div class="page-heading" data-list-scroll-target>
       <p class="kicker">Catalog</p>
       <h1>Bài hát</h1>
@@ -74,12 +74,12 @@ const selectedView = Astro.url.searchParams.get('view') === 'list' ? 'list' : 'g
                         </div>
                       </a>
                       <div class="song-grid-meta">
-                        <div class="song-grid-topline">
-                          <span class="song-grid-type">{typeLabel && <Badge kind="type" label={typeLabel} />}</span>
-                          <Badge kind="year" label={String(releaseYear)} />
-                        </div>
                         <h3 class="song-grid-title"><a href={`/songs/${song.id}`}>{data.title}</a></h3>
                         <p class="song-grid-artist" title={artist}>{artist || '\u00a0'}</p>
+                        <div class="song-grid-topline">
+                          {typeLabel && <Badge kind="type" label={typeLabel} />}
+                          <Badge kind="year" label={String(releaseYear)} />
+                        </div>
                       </div>
                     </div>
                     <div class="song-list-content">
@@ -92,9 +92,6 @@ const selectedView = Astro.url.searchParams.get('view') === 'list' ? 'list' : 'g
                       </div>
                       <div class="list-song-type">{typeLabel && <Badge kind="type" label={typeLabel} />}</div>
                       <div class="list-song-year"><Badge kind="year" label={String(releaseYear)} /></div>
-                      <div class="list-platforms">
-                        {data.links.map(link => <span>{link.platform}</span>)}
-                      </div>
                     </div>
                   </article>
                 );
@@ -121,6 +118,7 @@ const selectedView = Astro.url.searchParams.get('view') === 'list' ? 'list' : 'g
     .page-description { margin:0; color:var(--muted); font-size:.88rem; }
     .songs-page .type-filters { flex:0 1 auto; }
     .list-container { border:1px solid var(--sand); border-radius:12px; }
+    .songs-page[data-active-view="grid"] .list-container { border:0; border-radius:0; }
     .song-groups.grid-view { display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:14px; border:0; overflow:visible; }
     .song-groups.grid-view .song-year-heading { display:none; }
     .song-year-group { min-width:0; }
@@ -128,19 +126,19 @@ const selectedView = Astro.url.searchParams.get('view') === 'list' ? 'list' : 'g
     .song-year-items { display:contents; }
     .song-card { min-width:0; background:var(--paper); border:1px solid var(--sand); }
     .song-grid-content { padding:12px; }
-    .song-groups.grid-view .song-card { border-radius:12px; overflow:hidden; }
+    .song-groups.grid-view .song-card { display:flex; align-items:stretch; border-radius:12px; overflow:hidden; }
+    .song-groups.grid-view .song-grid-content { display:flex; width:100%; flex-direction:column; }
     .cover-link { display:block; text-decoration:none; }
     .cover-art { display:grid; place-items:center; aspect-ratio:1; }
     .song-grid-content .album-vinyl { width:min(100%, 240px); }
-    .song-grid-meta { display:grid; min-width:0; grid-template-rows:1.45rem auto 1.15rem; row-gap:2px; padding-top:6px; }
-    .song-grid-topline { display:flex; min-width:0; height:1.45rem; align-items:center; justify-content:space-between; gap:6px; }
+    .song-grid-meta { display:flex; min-width:0; flex:1; flex-direction:column; align-items:center; padding-top:6px; }
+    .song-grid-topline { display:flex; min-width:0; align-items:center; justify-content:center; gap:8px; margin-top:auto; padding-top:12px; }
     .song-grid-meta h3, .list-song-copy h3 { margin:0; font-size:.9rem; line-height:1.35; }
-    .song-grid-title { min-width:0; max-height:2.4em; align-self:start; display:-webkit-box; overflow:hidden; text-align:center; -webkit-box-orient:vertical; -webkit-line-clamp:2; line-clamp:2; line-height:1.2; overflow-wrap:anywhere; }
+    .song-grid-title { min-width:0; max-width:100%; display:-webkit-box; overflow:hidden; font-weight:700; line-height:1.2; text-align:center; overflow-wrap:anywhere; -webkit-box-orient:vertical; -webkit-line-clamp:2; line-clamp:2; }
     .song-grid-meta h3 a, .list-song-copy h3 a { color:var(--ink); text-decoration:none; }
     .song-grid-meta h3 a:hover, .list-song-copy h3 a:hover { color:var(--amber-d); }
     .song-artist { margin:.1rem 0 .35rem; color:var(--muted); font-size:.75rem; line-height:1.35; }
-    .song-grid-artist { width:100%; height:1.15rem; margin:0; overflow:hidden; color:var(--muted); font-size:.75rem; line-height:1.15rem; text-align:center; text-overflow:ellipsis; white-space:nowrap; }
-    .song-grid-type { min-width:0; }
+    .song-grid-artist { width:100%; margin:0; overflow:hidden; color:var(--muted); font-size:.75rem; line-height:1.15rem; text-align:center; text-overflow:ellipsis; white-space:nowrap; }
     .song-grid-topline .badge { flex:none; white-space:nowrap; }
     .song-groups.list-view { display:block; }
     .song-groups.list-view .song-year-group { display:block; }
@@ -148,7 +146,7 @@ const selectedView = Astro.url.searchParams.get('view') === 'list' ? 'list' : 'g
     .song-groups.list-view .song-year-items { display:block; }
     .song-groups.list-view .song-card { border:0; border-bottom:1px solid var(--sand); }
     .song-groups.list-view .song-card:last-child { border-bottom:0; }
-    .song-grid-content { display:block; }
+    .song-groups.list-view .song-grid-content { display:block; }
     .song-list-content { display:none; }
     .song-groups.list-view .song-grid-content { display:none; }
     .song-groups.list-view .song-list-content { display:flex; min-height:64px; align-items:center; gap:12px; padding:8px 12px; }
@@ -157,12 +155,10 @@ const selectedView = Astro.url.searchParams.get('view') === 'list' ? 'list' : 'g
     .list-song-copy { min-width:0; flex:1 1 auto; }
     .list-song-copy h3 { overflow-wrap:anywhere; }
     .list-song-type, .list-song-year { width:78px; flex:none; text-align:center; }
-    .list-platforms { width:145px; flex:none; display:flex; justify-content:flex-end; flex-wrap:wrap; gap:2px 8px; color:var(--muted); font-size:.68rem; }
     .empty-filtered { margin-top:1rem; }
     .empty-filtered p { margin:0 0 .8rem; }
     @media (max-width:900px) {
       .song-groups.grid-view { grid-template-columns:repeat(3, minmax(0, 1fr)); }
-      .list-platforms { width:105px; }
     }
     @media (max-width:640px) {
       .song-groups.grid-view { grid-template-columns:repeat(2, minmax(0, 1fr)); gap:10px; }
@@ -171,7 +167,6 @@ const selectedView = Astro.url.searchParams.get('view') === 'list' ? 'list' : 'g
       .song-groups.list-view .song-list-content { gap:8px; padding:8px; }
       .list-cover, .list-cover .album-vinyl { width:44px; }
       .list-song-type, .list-song-year { width:auto; }
-      .list-platforms { display:none; }
     }
   </style>
 </Base>
