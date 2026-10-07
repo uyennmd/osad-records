@@ -5,7 +5,6 @@ import ListToolbar from '../../components/ListToolbar.astro';
 import Pagination from '../../components/Pagination.astro';
 import VinylRecord from '../../components/VinylRecord.astro';
 import Base from '../../layouts/Base.astro';
-import { getPlatformConfig } from '../../lib/platforms';
 import { getArtistDisplay } from '../../lib/songs';
 
 const songs = (await getCollection('songs')).sort(
@@ -58,14 +57,6 @@ const selectedView = Astro.url.searchParams.get('view') === 'list' ? 'list' : 'g
                 const artist = getArtistDisplay(data);
                 const searchable = [data.title, data.album, artist].filter(Boolean).join(' ');
                 const typeLabel = types.find(type => type.value === data.type)?.label ?? '';
-                const platformIcons = [
-                  { label: 'Spotify', configName: 'Spotify', matches: ['spotify'] },
-                  { label: 'Apple Music', configName: 'Apple Music', matches: ['apple music'] },
-                  { label: 'YouTube', configName: 'YouTube', matches: ['youtube', 'youtube music'] },
-                ].flatMap(platform => {
-                  const link = data.links.find(item => platform.matches.includes(item.platform.trim().toLowerCase()));
-                  return link ? [{ ...platform, url: link.url, config: getPlatformConfig(platform.configName) }] : [];
-                });
                 return (
                   <article
                     class="song-card"
@@ -83,21 +74,12 @@ const selectedView = Astro.url.searchParams.get('view') === 'list' ? 'list' : 'g
                         </div>
                       </a>
                       <div class="song-grid-meta">
-                        <div class="song-title-line">
-                          <h3><a href={`/songs/${song.id}`}>{data.title}</a></h3>
+                        <div class="song-grid-topline">
+                          <span class="song-grid-type">{typeLabel && <Badge kind="type" label={typeLabel} />}</span>
                           <Badge kind="year" label={String(releaseYear)} />
                         </div>
+                        <h3 class="song-grid-title"><a href={`/songs/${song.id}`}>{data.title}</a></h3>
                         <p class="song-grid-artist" title={artist}>{artist || '\u00a0'}</p>
-                        <div class="song-grid-bottom">
-                          <span class="song-grid-type">{typeLabel && <Badge kind="type" label={typeLabel} />}</span>
-                          <span class="song-grid-platforms">
-                            {platformIcons.map(platform => (
-                              <a href={platform.url} target="_blank" rel="noopener" aria-label={platform.label}>
-                                <img src={platform.config.icon} alt="" aria-hidden="true" loading="lazy" />
-                              </a>
-                            ))}
-                          </span>
-                        </div>
                       </div>
                     </div>
                     <div class="song-list-content">
@@ -150,21 +132,16 @@ const selectedView = Astro.url.searchParams.get('view') === 'list' ? 'list' : 'g
     .cover-link { display:block; text-decoration:none; }
     .cover-art { display:grid; place-items:center; aspect-ratio:1; }
     .song-grid-content .album-vinyl { width:min(100%, 240px); }
-    .song-grid-meta { display:grid; min-width:0; grid-template-rows:2.55rem 1.15rem 1.45rem; row-gap:4px; padding-top:6px; }
-    .song-title-line { display:flex; min-width:0; height:2.55rem; align-items:center; justify-content:space-between; gap:6px; }
+    .song-grid-meta { display:grid; min-width:0; grid-template-rows:1.45rem auto 1.15rem; row-gap:2px; padding-top:6px; }
+    .song-grid-topline { display:flex; min-width:0; height:1.45rem; align-items:center; justify-content:space-between; gap:6px; }
     .song-grid-meta h3, .list-song-copy h3 { margin:0; font-size:.9rem; line-height:1.35; }
-    .song-title-line h3 { min-width:0; flex:1 1 auto; display:-webkit-box; overflow:hidden; -webkit-box-orient:vertical; -webkit-line-clamp:2; line-clamp:2; overflow-wrap:anywhere; }
-    .song-title-line .badge { flex:none; white-space:nowrap; }
+    .song-grid-title { min-width:0; max-height:2.4em; align-self:start; display:-webkit-box; overflow:hidden; text-align:center; -webkit-box-orient:vertical; -webkit-line-clamp:2; line-clamp:2; line-height:1.2; overflow-wrap:anywhere; }
     .song-grid-meta h3 a, .list-song-copy h3 a { color:var(--ink); text-decoration:none; }
     .song-grid-meta h3 a:hover, .list-song-copy h3 a:hover { color:var(--amber-d); }
     .song-artist { margin:.1rem 0 .35rem; color:var(--muted); font-size:.75rem; line-height:1.35; }
-    .song-grid-artist { width:100%; height:1.15rem; margin:0; overflow:hidden; color:var(--muted); font-size:.75rem; line-height:1.15rem; text-overflow:ellipsis; white-space:nowrap; }
-    .song-grid-bottom { display:flex; min-width:0; height:1.45rem; align-items:center; justify-content:space-between; gap:6px; }
+    .song-grid-artist { width:100%; height:1.15rem; margin:0; overflow:hidden; color:var(--muted); font-size:.75rem; line-height:1.15rem; text-align:center; text-overflow:ellipsis; white-space:nowrap; }
     .song-grid-type { min-width:0; }
-    .song-grid-platforms { display:flex; align-items:center; gap:7px; }
-    .song-grid-platforms a { display:grid; width:17px; height:17px; place-items:center; }
-    .song-grid-platforms img { display:block; width:15px; height:15px; object-fit:contain; }
-    .song-grid-platforms a:hover img { opacity:.7; }
+    .song-grid-topline .badge { flex:none; white-space:nowrap; }
     .song-groups.list-view { display:block; }
     .song-groups.list-view .song-year-group { display:block; }
     .song-year-heading { position:sticky; z-index:2; top:0; margin:0; padding:.42rem .8rem; border-bottom:1px solid var(--sand); background:var(--cream); color:var(--amber-d); font-size:1rem; }
