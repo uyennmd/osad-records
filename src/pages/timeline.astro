@@ -1,32 +1,176 @@
 ---
+import { getCollection } from 'astro:content';
+import Badge from '../components/Badge.astro';
+import ListToolbar from '../components/ListToolbar.astro';
+import Pagination from '../components/Pagination.astro';
 import Base from '../layouts/Base.astro';
-import { getSongs, fmtDate } from '../lib/songs';
-const songs = await getSongs();
-const years = [...new Set(songs.map(s => s.data.releaseDate.getFullYear()))];
+
+const journey = (await getCollection('journey')).sort(
+  (first, second) => second.data.date.localeCompare(first.data.date),
+);
+const years = [...new Set(journey.map(item => Number(item.data.date.slice(0, 4))))]
+  .sort((first, second) => second - first);
+const journeyByYear = years.map(year => ({
+  year,
+  items: journey.filter(item => Number(item.data.date.slice(0, 4)) === year),
+}));
+const types = [
+  { value: 'interview', label: 'Interview' },
+  { value: 'event', label: 'Event' },
+  { value: 'performance', label: 'Performance' },
+  { value: 'other', label: 'Other' },
+].map(type => ({
+  ...type,
+  count: journey.filter(item => item.data.type === type.value).length,
+}));
+const selectedSort = Astro.url.searchParams.get('sort') ?? 'newest';
+const formatDate = (value: string) => new Date(`${value}T00:00:00`).toLocaleDateString('vi-VN');
+const isVideo = (url?: string) => Boolean(url && /(?:youtube\.com|youtu\.be|vimeo\.com)/i.test(url));
 ---
-<Base title="Timeline">
-  <p class="kicker">Timeline</p>
-  <h1>Hành trình âm nhạc</h1>
-  {songs.length === 0 && <div class="empty">Chưa có bài hát nào.</div>}
-  <div class="tl">
-    {years.map(y => (
-      <section>
-        <h2 class="year">{y}</h2>
-        {songs.filter(s => s.data.releaseDate.getFullYear() === y).map(s => (
-          <a class="item" href={`/songs/${s.id}`}>
-            <span class="mono muted">{fmtDate(s.data.releaseDate)} · {s.cat}</span>
-            <b>{s.data.title}</b>
-            {s.data.album && <span class="muted">{s.data.album}</span>}
-          </a>
+<Base title="Hành trình">
+  <section class="journey-page" data-list-root data-total-items={journey.length} data-default-sort="newest" data-default-view="list" data-page-size="10">
+    <div class="page-heading" data-list-scroll-target>
+      <p class="kicker">OSAD archive</p>
+      <h1>Hành trình</h1>
+      <p class="page-description">Phỏng vấn, sự kiện và các khoảnh khắc khác của OSAD</p>
+    </div>
+    <ListToolbar
+      total={journey.length}
+      typeOptions={types}
+      years={years}
+      sortOptions={[
+        { value: 'newest', label: 'Mới nhất' },
+        { value: 'oldest', label: 'Cũ nhất' },
+      ]}
+      defaultSort={selectedSort}
+      searchPlaceholder="Tìm theo tiêu đề..."
+    />
+    <p class="list-status" data-list-status aria-live="polite">
+      Hiển thị {journey.length ? 1 : 0} đến {Math.min(journey.length, 10)} / {journey.length}
+    </p>
+    {journey.length ? (
+      <div class="journey-list" data-list-items>
+        {journeyByYear.map(({ year, items }) => (
+          <section class="journey-year-group" data-year-group data-year={year}>
+            <h2 class="journey-year-heading" data-list-year-heading={year}>{year}</h2>
+            <div data-year-items={year}>
+              {items.map(item => {
+                const data = item.data;
+                const yearLabel = data.date.slice(0, 4);
+                const hasVideo = isVideo(data.url);
+                const searchable = [data.title, data.source].filter(Boolean).join(' ');
+                return (
+                  <article
+                    class="journey-item"
+                    data-list-item
+                    data-date={data.date}
+                    data-year={yearLabel}
+                    data-type={data.type}
+                    data-title={data.title}
+                    data-search={searchable}
+                  >
+                    <div class:list={['journey-thumbnail', { 'event-placeholder': data.type === 'event' }]} data-type={data.type}>
+                      {data.thumbnail ? (
+                        <>
+                          <img
+                            src={data.thumbnail}
+                            alt={`Ảnh thu nhỏ: ${data.title}`}
+                            loading="lazy"
+                            onerror="this.hidden = true; this.nextElementSibling.hidden = false;"
+                          />
+                          <span class="thumbnail-fallback" hidden>
+                            {data.type === 'event'
+                              ? <span class="event-day">{new Date(`${data.date}T00:00:00`).getDate()}</span>
+                              : <span class="thumbnail-mark" aria-hidden="true">OSAD</span>}
+                          </span>
+                        </>
+                      ) : data.type === 'event' ? (
+                        <span class="event-day">{new Date(`${data.date}T00:00:00`).getDate()}</span>
+                      ) : (
+                        <span class="thumbnail-mark" aria-hidden="true">OSAD</span>
+                      )}
+                      {hasVideo && (
+                        <span class="play-mark" aria-hidden="true"><span></span></span>
+                      )}
+                    </div>
+                    <div class="journey-copy">
+                      <h3>{data.title}</h3>
+                      <p>{formatDate(data.date)}{data.source ? ` · ${data.source}` : ''}</p>
+                    </div>
+                    <div class="journey-type">
+                      <Badge kind="type" label={types.find(type => type.value === data.type)?.label ?? 'Other'} />
+                    </div>
+                    <div class="journey-year"><Badge kind="year" label={yearLabel} /></div>
+                    <div class="journey-open">
+                      {data.url && <a href={data.url} target="_blank" rel="noopener">Mở</a>}
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
         ))}
-      </section>
-    ))}
-  </div>
+      </div>
+    ) : (
+      <div class="empty">Chưa có mục hành trình nào.</div>
+    )}
+    {journey.length > 0 && (
+      <>
+        <div class="empty empty-filtered" data-list-empty hidden>
+          <p>Không có kết quả</p>
+          <button type="button" class="btn" data-clear-filters>Xóa bộ lọc</button>
+        </div>
+        <Pagination totalItems={journey.length} pageSize={10} />
+      </>
+    )}
+  </section>
+
   <style>
-    .tl { border-left:3px solid var(--amber); margin-left:.4rem; padding-left:1.4rem; }
-    .year { font-family:var(--mono); color:var(--amber-d); margin-top:1.8rem; }
-    .item { position:relative; display:flex; flex-direction:column; padding:.5rem 0 .9rem; color:var(--ink); text-decoration:none; }
-    .item::before { content:''; position:absolute; left:-1.95rem; top:.85rem; width:12px; height:12px; border-radius:50%; background:var(--cream); border:3px solid var(--amber); }
-    .item:hover b { color:var(--amber-d); }
+    .page-heading .kicker { margin-bottom:.45rem; }
+    .page-heading h1 { margin-bottom:.25rem; }
+    .page-description { margin:0; color:var(--muted); font-size:.88rem; }
+    .journey-page .type-filters { flex:0 1 auto; }
+    .journey-list { border:1px solid var(--sand); border-radius:12px; overflow:clip; }
+    .journey-year-heading { position:sticky; z-index:2; top:0; margin:0; padding:.42rem .8rem; border-bottom:1px solid var(--sand); background:var(--cream); color:var(--amber-d); font-size:1rem; }
+    .journey-item { display:flex; min-height:112px; align-items:center; gap:16px; padding:10px 12px; border-bottom:1px solid var(--sand); background:var(--paper); }
+    .journey-year-group:last-child [data-year-items] > .journey-item:last-child { border-bottom:0; }
+    .journey-thumbnail { position:relative; width:176px; height:99px; flex:none; overflow:hidden; display:grid; place-items:center; border-radius:10px; background:linear-gradient(120deg, #351b10, #e8731a); color:var(--paper); }
+    .journey-thumbnail[data-type="interview"] { background:linear-gradient(120deg, #30180d, #a54c12); }
+    .journey-thumbnail[data-type="performance"] { background:linear-gradient(120deg, #7d350e, #f1993c); }
+    .journey-thumbnail[data-type="other"] { background:linear-gradient(120deg, #57301a, #df8142); }
+    .journey-thumbnail.event-placeholder { background:linear-gradient(120deg, #ffc46b, #c94b12); }
+    .journey-thumbnail img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+    .thumbnail-fallback { position:absolute; inset:0; display:grid; place-items:center; }
+    .thumbnail-mark { font-size:1.35rem; font-weight:900; letter-spacing:.14em; }
+    .event-day { font-size:2.1rem; font-weight:900; line-height:1; text-shadow:0 2px 3px rgba(43,26,16,.3); }
+    .play-mark { position:absolute; inset:0; display:grid; place-items:center; }
+    .play-mark::before { content:""; width:30px; height:30px; border-radius:50%; background:rgba(255,253,248,.92); }
+    .play-mark span { position:absolute; width:0; height:0; margin-left:2px; border-top:5px solid transparent; border-bottom:5px solid transparent; border-left:8px solid var(--amber-d); }
+    .journey-copy { min-width:0; flex:1 1 auto; }
+    .journey-copy h3 { margin:0 0 .3rem; font-size:.98rem; }
+    .journey-copy p { margin:0; color:var(--muted); font-size:.78rem; }
+    .journey-type, .journey-year { width:84px; flex:none; text-align:center; }
+    .journey-open { width:45px; flex:none; text-align:right; font-size:.82rem; font-weight:800; }
+    .journey-open a { text-decoration:none; }
+    .journey-open a:hover { text-decoration:underline; }
+    .empty-filtered { margin-top:1rem; }
+    .empty-filtered p { margin:0 0 .8rem; }
+    @media (max-width:760px) {
+      .journey-item { gap:10px; }
+      .journey-thumbnail { width:132px; height:74px; }
+      .journey-type, .journey-year { width:auto; }
+      .journey-type .badge, .journey-year .badge { font-size:.66rem; }
+    }
+    @media (max-width:540px) {
+      .journey-list { overflow:visible; }
+      .journey-item { min-height:96px; gap:8px; padding:8px; }
+      .journey-thumbnail { width:104px; height:59px; border-radius:8px; }
+      .thumbnail-mark { font-size:.9rem; }
+      .event-day { font-size:1.6rem; }
+      .journey-copy h3 { font-size:.8rem; }
+      .journey-copy p { font-size:.68rem; }
+      .journey-type, .journey-year { display:none; }
+      .journey-open { width:30px; font-size:.75rem; }
+    }
   </style>
 </Base>

@@ -10,17 +10,26 @@ const on = (h: string) => (h === '/' ? path === '/' : path.startsWith(h));
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#E8731A" />
+    <meta name="theme-color" content={path === '/' ? '#E8731A' : '#FFF6EA'} />
     <title>{title === 'OSAD Records' ? title : `${title} · OSAD Records`}</title>
     <ClientRouter fallback="swap" />
   </head>
-  <body>
+  <body class={path === '/' ? 'home-page' : 'inner-page'}>
     <div class="shell">
-      <aside class="side">
-        <a class="logo" href="/"><span class="disc"></span><span><b>OSAD</b><small>RECORDS</small></span></a>
-        <nav>{nav.map(([href, label], i) => <a href={href} class={on(href) ? 'on' : ''}><span>{String(i + 1).padStart(2, '0')}</span>{label}</a>)}</nav>
-        <p class="note">Fan archive phi lợi nhuận.</p>
-      </aside>
+      <header class="site-header">
+        <a class="logo" href="/" aria-label="OSAD Records - Trang chủ">
+          <span class="disc" aria-hidden="true"></span>
+          <span>OSAD Records</span>
+        </a>
+        <details class="nav-menu">
+          <summary aria-label="Mở menu điều hướng"><span class="menu-icon" aria-hidden="true"></span>Menu</summary>
+          <nav class="top-nav" aria-label="Điều hướng chính">
+            {nav.map(([href, label]) => (
+              <a href={href} aria-current={on(href) ? 'page' : undefined}>{label}</a>
+            ))}
+          </nav>
+        </details>
+      </header>
       <div>
         <main>
           <slot />

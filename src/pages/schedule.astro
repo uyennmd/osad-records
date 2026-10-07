@@ -1,6 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
-import events from '../data/events.json';
+import { getCollection } from 'astro:content';
+const events = (await getCollection('events')).map(event => event.data);
 const start = new Date(); start.setDate(1); start.setHours(0, 0, 0, 0);
 const list = events.map(e => ({ ...e, d: new Date(e.date + 'T00:00:00') })).filter(e => e.d >= start).sort((a, b) => +a.d - +b.d);
 const groups = new Map<string, typeof list>();
@@ -33,4 +34,3 @@ const wd = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
     .day small { font-family:var(--mono); color:var(--amber); }
   </style>
 </Base>
-

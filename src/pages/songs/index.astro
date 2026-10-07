@@ -1,113 +1,173 @@
 ---
+import { getCollection } from 'astro:content';
+import Badge from '../../components/Badge.astro';
+import ListToolbar from '../../components/ListToolbar.astro';
+import Pagination from '../../components/Pagination.astro';
+import VinylRecord from '../../components/VinylRecord.astro';
 import Base from '../../layouts/Base.astro';
-import { getSongs, fmtDate } from '../../lib/songs';
-const songs = (await getSongs()).reverse();
+import { getArtistDisplay } from '../../lib/songs';
+
+const songs = (await getCollection('songs')).sort(
+  (first, second) => +second.data.releaseDate - +first.data.releaseDate,
+);
+const years = [...new Set(songs.map(song => song.data.releaseDate.getFullYear()))]
+  .sort((first, second) => second - first);
+const songsByYear = years.map(year => ({
+  year,
+  songs: songs.filter(song => song.data.releaseDate.getFullYear() === year),
+}));
+const types = [
+  { value: 'solo', label: 'Solo' },
+  { value: 'collab', label: 'Collab' },
+  { value: 'featured', label: 'Featured' },
+  { value: 'other', label: 'Other' },
+].map(type => ({
+  ...type,
+  count: songs.filter(song => song.data.type === type.value).length,
+}));
+const selectedView = Astro.url.searchParams.get('view') === 'list' ? 'list' : 'grid';
 ---
 <Base title="Bài hát">
-  <p class="kicker">Catalog</p>
-  <h1>Bài hát</h1>
-  {songs.length === 0 && <div class="empty">Chưa có bài hát nào.</div>}
-  <div class="cards">
-    {songs.map((s) => {
-      const year = new Date(s.data.releaseDate).getFullYear();
-      return (
-        <article class="song-card">
-          <a href={`/songs/${s.id}`} class="cover-link" aria-label={`Xem bài hát ${s.data.title}`}>
-            <div class="cover-art">
-              <div class="album-vinyl">
-                {s.data.cover ? <img class="album-art" src={s.data.cover} alt={`Ảnh album ${s.data.album || s.data.title}`} loading="lazy" /> : <span class="album-art-fallback"></span>}
-              </div>
+  <section class="songs-page" data-list-root data-total-items={songs.length} data-default-sort="newest" data-default-view="grid" data-page-sizes="grid:12,list:10">
+    <div class="page-heading" data-list-scroll-target>
+      <p class="kicker">Catalog</p>
+      <h1>Bài hát</h1>
+      <p class="page-description">{songs.length} bài hát, tìm hoặc lọc để thấy nhanh hơn</p>
+    </div>
+    <ListToolbar
+      total={songs.length}
+      typeOptions={types}
+      years={years}
+      searchPlaceholder="Tìm tên bài, album, nghệ sĩ..."
+      showView
+      view={selectedView}
+    />
+    <p class="list-status" data-list-status aria-live="polite">
+      Hiển thị {Math.min(songs.length, selectedView === 'list' ? 10 : 12) ? 1 : 0} đến {Math.min(songs.length, selectedView === 'list' ? 10 : 12)} / {songs.length}
+    </p>
+    <div class="list-container">
+      <div class={`song-groups ${selectedView === 'list' ? 'list-view' : 'grid-view'}`} data-list-items data-active-view={selectedView}>
+        {songsByYear.map(({ year, songs: yearSongs }) => (
+          <section class="song-year-group" data-year-group data-year={year}>
+            <h2 class="song-year-heading" data-list-year-heading={year}>{year}</h2>
+            <div class="song-year-items" data-year-items={year}>
+              {yearSongs.map(song => {
+                const data = song.data;
+                const releaseYear = data.releaseDate.getFullYear();
+                const artist = getArtistDisplay(data);
+                const searchable = [data.title, data.album, artist].filter(Boolean).join(' ');
+                const typeLabel = types.find(type => type.value === data.type)?.label ?? '';
+                return (
+                  <article
+                    class="song-card"
+                    data-list-item
+                    data-date={data.releaseDate.toISOString().slice(0, 10)}
+                    data-year={releaseYear}
+                    data-type={data.type ?? ''}
+                    data-title={data.title}
+                    data-search={searchable}
+                  >
+                    <div class="song-grid-content">
+                      <a href={`/songs/${song.id}`} class="cover-link" aria-label={`Xem bài hát ${data.title}`}>
+                        <div class="cover-art">
+                          <VinylRecord cover={data.cover} alt={`Ảnh album ${data.album || data.title}`} />
+                        </div>
+                      </a>
+                      <div class="song-grid-meta">
+                        <div class="song-title-line">
+                          <h3><a href={`/songs/${song.id}`}>{data.title}</a></h3>
+                          <Badge kind="year" label={String(releaseYear)} />
+                        </div>
+                        {artist && <p class="song-artist">{artist}</p>}
+                        {typeLabel && <Badge kind="type" label={typeLabel} />}
+                      </div>
+                    </div>
+                    <div class="song-list-content">
+                      <a href={`/songs/${song.id}`} class="list-cover cover-link" aria-label={`Xem bài hát ${data.title}`}>
+                        <VinylRecord cover={data.cover} alt={`Ảnh album ${data.album || data.title}`} />
+                      </a>
+                      <div class="list-song-copy">
+                        <h3><a href={`/songs/${song.id}`}>{data.title}</a></h3>
+                        {artist && <p class="song-artist">{artist}</p>}
+                      </div>
+                      <div class="list-song-type">{typeLabel && <Badge kind="type" label={typeLabel} />}</div>
+                      <div class="list-song-year"><Badge kind="year" label={String(releaseYear)} /></div>
+                      <div class="list-platforms">
+                        {data.links.map(link => <span>{link.platform}</span>)}
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
             </div>
-          </a>
-
-          <div class="meta">
-            <h3><a href={`/songs/${s.id}`}>{s.data.title}</a></h3>
-            {s.data.album && <p class="artist">{s.data.album}</p>}
-            <p class="year">{year}</p>
-          </div>
-        </article>
-      );
-    })}
-  </div>
+          </section>
+        ))}
+      </div>
+    </div>
+    {songs.length === 0 ? (
+      <div class="empty">Chưa có bài hát nào.</div>
+    ) : (
+      <div class="empty empty-filtered" data-list-empty hidden>
+        <p>Không có kết quả</p>
+        <button type="button" class="btn" data-clear-filters>Xóa bộ lọc</button>
+      </div>
+    )}
+    <Pagination totalItems={songs.length} pageSize={selectedView === 'list' ? 10 : 12} />
+  </section>
 
   <style>
-    .cards {
-      display:grid;
-      grid-template-columns:repeat(3, minmax(0, 1fr));
-      gap:1.6rem;
-      align-items:stretch;
+    .page-heading .kicker { margin-bottom:.45rem; }
+    .page-heading h1 { margin-bottom:.25rem; }
+    .page-description { margin:0; color:var(--muted); font-size:.88rem; }
+    .songs-page .type-filters { flex:0 1 auto; }
+    .list-container { border:1px solid var(--sand); border-radius:12px; }
+    .song-groups.grid-view { display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:14px; border:0; overflow:visible; }
+    .song-groups.grid-view .song-year-heading { display:none; }
+    .song-year-group { min-width:0; }
+    .song-groups.grid-view .song-year-group { display:contents; }
+    .song-year-items { display:contents; }
+    .song-card { min-width:0; background:var(--paper); border:1px solid var(--sand); }
+    .song-grid-content { padding:12px; }
+    .song-groups.grid-view .song-card { border-radius:12px; overflow:hidden; }
+    .cover-link { display:block; text-decoration:none; }
+    .cover-art { display:grid; place-items:center; aspect-ratio:1; }
+    .song-grid-content .album-vinyl { width:min(100%, 240px); }
+    .song-grid-meta { min-height:56px; padding-top:6px; }
+    .song-title-line { display:flex; align-items:flex-start; justify-content:space-between; gap:6px; }
+    .song-grid-meta h3, .list-song-copy h3 { margin:0; font-size:.9rem; line-height:1.35; }
+    .song-grid-meta h3 a, .list-song-copy h3 a { color:var(--ink); text-decoration:none; }
+    .song-grid-meta h3 a:hover, .list-song-copy h3 a:hover { color:var(--amber-d); }
+    .song-artist { margin:.1rem 0 .35rem; color:var(--muted); font-size:.75rem; line-height:1.35; }
+    .song-groups.list-view { display:block; }
+    .song-groups.list-view .song-year-group { display:block; }
+    .song-year-heading { position:sticky; z-index:2; top:0; margin:0; padding:.42rem .8rem; border-bottom:1px solid var(--sand); background:var(--cream); color:var(--amber-d); font-size:1rem; }
+    .song-groups.list-view .song-year-items { display:block; }
+    .song-groups.list-view .song-card { border:0; border-bottom:1px solid var(--sand); }
+    .song-groups.list-view .song-card:last-child { border-bottom:0; }
+    .song-grid-content { display:block; }
+    .song-list-content { display:none; }
+    .song-groups.list-view .song-grid-content { display:none; }
+    .song-groups.list-view .song-list-content { display:flex; min-height:64px; align-items:center; gap:12px; padding:8px 12px; }
+    .list-cover { width:48px; flex:none; }
+    .list-cover .album-vinyl { width:48px; box-shadow:none; }
+    .list-song-copy { min-width:0; flex:1 1 auto; }
+    .list-song-copy h3 { overflow-wrap:anywhere; }
+    .list-song-type, .list-song-year { width:78px; flex:none; text-align:center; }
+    .list-platforms { width:145px; flex:none; display:flex; justify-content:flex-end; flex-wrap:wrap; gap:2px 8px; color:var(--muted); font-size:.68rem; }
+    .empty-filtered { margin-top:1rem; }
+    .empty-filtered p { margin:0 0 .8rem; }
+    @media (max-width:900px) {
+      .song-groups.grid-view { grid-template-columns:repeat(3, minmax(0, 1fr)); }
+      .list-platforms { width:105px; }
     }
-
-    .song-card {
-      background:linear-gradient(180deg, rgba(255,255,255,0.68), rgba(255,247,240,0.92));
-      border:1px solid rgba(206, 170, 132, 0.8);
-      border-radius:24px;
-      overflow:hidden;
-      box-shadow:0 18px 38px rgba(63, 39, 20, 0.12);
-      transition:transform .2s ease, box-shadow .2s ease, border-color .2s ease;
-      padding:1rem;
-    }
-
-    .song-card:hover {
-      transform:translateY(-4px);
-      border-color:rgba(194, 93, 12, 0.7);
-      box-shadow:0 24px 44px rgba(63, 39, 20, 0.16);
-    }
-
-    .cover-link {
-      display:block;
-      text-decoration:none;
-    }
-
-    .cover-art {
-      position:relative;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      aspect-ratio:1;
-    }
-
-    .meta {
-      padding:1rem 0 0;
-      text-align:center;
-    }
-
-    .meta h3 {
-      margin:0 0 .35rem;
-      font-size:1.32rem;
-      line-height:1.3;
-    }
-
-    .meta h3 a {
-      color:var(--ink);
-      text-decoration:none;
-    }
-
-    .meta h3 a:hover {
-      color:var(--amber-d);
-    }
-
-    .artist, .year {
-      margin:0;
-      color:var(--muted);
-      font-size:.82rem;
-      line-height:1.5;
-    }
-
-    .year {
-      margin-top:.15rem;
-    }
-
-    @media (max-width:980px) {
-      .cards {
-        grid-template-columns:repeat(2, minmax(0, 1fr));
-      }
-    }
-
-    @media (max-width:560px) {
-      .cards {
-        grid-template-columns:1fr;
-      }
+    @media (max-width:640px) {
+      .song-groups.grid-view { grid-template-columns:repeat(2, minmax(0, 1fr)); gap:10px; }
+      .song-grid-content { padding:8px; }
+      .song-grid-meta h3 { font-size:.82rem; }
+      .song-groups.list-view .song-list-content { gap:8px; padding:8px; }
+      .list-cover, .list-cover .album-vinyl { width:44px; }
+      .list-song-type, .list-song-year { width:auto; }
+      .list-platforms { display:none; }
     }
   </style>
 </Base>

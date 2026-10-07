@@ -1,0 +1,86 @@
+---
+interface FilterOption {
+  value: string;
+  label: string;
+  count: number;
+}
+
+interface SortOption {
+  value: string;
+  label: string;
+}
+
+interface Props {
+  typeOptions?: FilterOption[];
+  years?: number[];
+  sortOptions?: SortOption[];
+  total: number;
+  searchPlaceholder?: string;
+  showView?: boolean;
+  view?: 'grid' | 'list';
+  defaultSort?: string;
+}
+
+const {
+  typeOptions = [],
+  years = [],
+  sortOptions = [{ value: 'newest', label: 'Mới nhất' }, { value: 'oldest', label: 'Cũ nhất' }, { value: 'title', label: 'Tên A-Z' }],
+  total,
+  searchPlaceholder = 'Tìm kiếm...',
+  showView = false,
+  view = 'grid',
+  defaultSort = 'newest',
+} = Astro.props;
+const search = Astro.url.searchParams.get('q') ?? '';
+const selectedType = Astro.url.searchParams.get('type') ?? '';
+const selectedYear = Astro.url.searchParams.get('year') ?? '';
+const selectedSort = Astro.url.searchParams.get('sort') ?? defaultSort;
+const selectedView = Astro.url.searchParams.get('view') === 'list' ? 'list' : view;
+---
+<div class="list-toolbar" data-list-toolbar>
+  <label class="search-control">
+    <span class="visually-hidden">Tìm kiếm</span>
+    <input type="search" data-search-input placeholder={searchPlaceholder} value={search} />
+  </label>
+  {typeOptions.length > 0 && (
+    <div class="type-filters" role="group" aria-label="Lọc theo loại">
+      <button type="button" class="type-filter" data-type-filter="" aria-pressed={selectedType === ''}>
+        All <span>{total}</span>
+      </button>
+      {typeOptions.map(option => (
+        <button
+          type="button"
+          class="type-filter"
+          data-type-filter={option.value}
+          aria-pressed={selectedType === option.value}
+        >
+          {option.label} <span>{option.count}</span>
+        </button>
+      ))}
+    </div>
+  )}
+  <label class="select-control">
+    <span class="visually-hidden">Lọc theo năm</span>
+    <select data-year-filter aria-label="Năm">
+      <option value="" selected={selectedYear === ''}>Năm: Tất cả</option>
+      {years.map(year => <option value={year} selected={selectedYear === String(year)}>{year}</option>)}
+    </select>
+  </label>
+  <label class="select-control">
+    <span class="visually-hidden">Sắp xếp</span>
+    <select data-sort-control aria-label="Sắp xếp">
+      {sortOptions.map(option => <option value={option.value} selected={selectedSort === option.value}>{option.label}</option>)}
+    </select>
+  </label>
+  {showView && (
+    <div class="view-switch" role="group" aria-label="Kiểu hiển thị">
+      <button type="button" data-view-control="grid" aria-pressed={selectedView === 'grid'}>Lưới</button>
+      <button type="button" data-view-control="list" aria-pressed={selectedView === 'list'}>Danh sách</button>
+    </div>
+  )}
+</div>
+<script>
+  import { initializeListControls } from '../scripts/list-controls';
+  initializeListControls();
+  document.addEventListener('astro:page-load', initializeListControls);
+</script>

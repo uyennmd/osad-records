@@ -1,7 +1,10 @@
 ---
 import Base from '../../layouts/Base.astro';
 import { render } from 'astro:content';
+import Badge from '../../components/Badge.astro';
+import VinylRecord from '../../components/VinylRecord.astro';
 import { getSongs, fmtDate } from '../../lib/songs';
+import { getArtistDisplay } from '../../lib/songs';
 import { getPlatformConfig } from '../../lib/platforms';
 export async function getStaticPaths() {
   const songs = await getSongs();
@@ -11,51 +14,24 @@ const { song } = Astro.props;
 const { Content } = typeof song.body === 'string' ? await render(song) : { Content: null };
 const d = song.data;
 const hasLyrics = Boolean(d.lyrics?.trim() || song.body?.trim());
-
-const typeLabels = {
-  solo: 'Solo',
-  guest: 'Có khách mời',
-  featured: 'Tham gia feat',
-  collab: 'Song ca / hợp tác',
-  other: 'Khác',
-};
-
-const artistDisplay = (() => {
-  const partners = [d.partner_1, d.partner_2, d.partner_3].filter(Boolean);
-  const relatedArtists = [...new Set([d.mainArtist, ...partners].filter(Boolean))];
-  switch (d.type) {
-    case 'solo':
-      return ['OSAD', ...relatedArtists].join(', ');
-    case 'guest':
-      return relatedArtists.length > 0 ? `OSAD ft. ${relatedArtists.join(', ')}` : 'OSAD';
-    case 'featured':
-      return d.mainArtist
-        ? `${d.mainArtist} ft. OSAD${partners.length ? ` · ${partners.join(', ')}` : ''}`
-        : ['OSAD', ...partners].join(', ');
-    case 'collab':
-      return ['OSAD', ...relatedArtists].join(' x ');
-    case 'other':
-      return ['OSAD', ...relatedArtists].join(', ');
-    default:
-      return relatedArtists.length ? relatedArtists.join(', ') : 'OSAD';
-  }
-})();
+const artistDisplay = getArtistDisplay(d);
+const releaseYear = d.releaseDate.getFullYear();
+const typeLabels = { solo: 'Solo', collab: 'Collab', featured: 'Featured', other: 'Other' };
 ---
 <Base title={d.title}>
   <article class="song-detail-shell">
-    <div class="page-orb orb-one"></div>
-    <div class="page-orb orb-two"></div>
-
     <p class="back-link"><a href="/songs">← Kho nhạc</a></p>
     <div class="head">
       <div class="cover">
-        <div class="album-vinyl">
-          {d.cover ? <img class="album-art" src={d.cover} alt={`Ảnh album ${d.album || d.title}`} /> : <span class="album-art-fallback"></span>}
-        </div>
+        <VinylRecord cover={d.cover} alt={`Ảnh album ${d.album || d.title}`} loading="eager" />
       </div>
       <div class="title-block">
         <p class="kicker">{song.cat}</p>
         <h1>{d.title}</h1>
+        <div class="song-badges">
+          {d.type && <Badge kind="type" label={typeLabels[d.type]} />}
+          <Badge kind="year" label={String(releaseYear)} />
+        </div>
       </div>
     </div>
 
@@ -72,7 +48,7 @@ const artistDisplay = (() => {
         </div>
         <div class="info-item meta-card">
           <dt>Thể loại</dt>
-          <dd>{d.type ? typeLabels[d.type] : 'Chưa cập nhật'}</dd>
+          <dd>{d.type ? <Badge kind="type" label={typeLabels[d.type]} /> : 'Chưa cập nhật'}</dd>
         </div>
       </div>
 
@@ -126,53 +102,28 @@ const artistDisplay = (() => {
     <div class="lyrics-panel">
       {d.lyrics?.trim() ? <p class="lyrics-text">{d.lyrics}</p> : Content && hasLyrics ? <Content /> : <p class="lyrics-empty">Chưa có lời bài hát.</p>}
     </div>
+    {d.notes?.trim() && (
+      <>
+        <h2>Ghi chú</h2>
+        <div class="lyrics-panel"><p class="lyrics-text">{d.notes}</p></div>
+      </>
+    )}
   </article>
 
   <style>
     .song-detail-shell {
-      position:relative;
-      isolation:isolate;
       padding:clamp(1.2rem, 2vw, 2rem);
-      border-radius:30px;
-      background:linear-gradient(135deg, rgba(255,255,255,0.76), rgba(248,239,230,0.82));
-      border:1px solid rgba(229, 202, 176, 0.9);
-      box-shadow:0 28px 60px rgba(69, 41, 22, 0.08), inset 0 1px 0 rgba(255,255,255,0.75);
-      overflow:hidden;
-    }
-    .page-orb {
-      position:absolute;
-      border-radius:50%;
-      filter:blur(10px);
-      opacity:0.6;
-      z-index:-1;
-      pointer-events:none;
-    }
-    .orb-one {
-      width:260px;
-      height:260px;
-      background:radial-gradient(circle, rgba(232,115,26,0.18) 0%, rgba(232,115,26,0.04) 52%, transparent 100%);
-      top:-80px;
-      right:-40px;
-    }
-    .orb-two {
-      width:220px;
-      height:220px;
-      background:radial-gradient(circle, rgba(174,115,74,0.14) 0%, rgba(174,115,74,0.02) 48%, transparent 100%);
-      bottom:-60px;
-      left:-50px;
     }
     .back-link {
       margin:0 0 1rem;
       font-size:0.95rem;
     }
     .back-link a {
-      color:var(--ink);
       text-decoration:none;
-      opacity:0.8;
     }
-    .back-link a:hover { opacity:1; }
     .head { display:flex; gap:1.4rem; align-items:center; flex-wrap:wrap; margin:.5rem 0 1rem; }
     .title-block { flex:1 1 260px; }
+    .song-badges { display:flex; flex-wrap:wrap; gap:.4rem; }
     .song-info {
       display:grid;
       grid-template-columns:repeat(3, minmax(0, 1fr));
@@ -182,17 +133,16 @@ const artistDisplay = (() => {
     .info-item {
       min-width:0;
       padding:1rem 1.1rem;
-      border:1.5px solid #EA580C;
-      border-radius:16px;
-      background:rgba(255,255,255,0.36);
-      box-shadow:inset 0 0 0 1px rgba(234, 88, 12, 0.05), 0 8px 20px rgba(69,41,22,0.04);
+      border:1px solid var(--sand);
+      border-radius:12px;
+      background:var(--paper);
     }
     .meta-card {
       min-height:108px;
     }
     .artist-card {
       min-height:128px;
-      background:linear-gradient(180deg, rgba(255,255,255,0.52), rgba(255,247,241,0.7));
+      background:var(--paper);
     }
     .info-item dt {
       margin-bottom:.35rem;
@@ -246,14 +196,13 @@ const artistDisplay = (() => {
       gap:.55rem;
       min-height:48px;
       padding:.55rem .9rem;
-      border:1.5px solid #EA580C;
+      border:1.5px solid var(--amber);
       border-radius:12px;
-      background:rgba(255,255,255,0.3);
+      background:var(--paper);
       color:var(--ink);
       font-size:.9rem;
       font-weight:700;
       text-decoration:none;
-      transition:background .24s ease, color .24s ease, box-shadow .24s ease, transform .24s ease;
       box-shadow:inset 0 0 0 1px rgba(234, 88, 12, 0.08), 0 6px 14px rgba(54, 31, 15, 0.05);
     }
     .stream-link img {
@@ -262,29 +211,25 @@ const artistDisplay = (() => {
       flex:none;
       object-fit:contain;
       display:block;
-      transition:filter .24s ease, transform .24s ease;
     }
     .stream-link-wordmark { min-width:168px; }
     .stream-link-wordmark img { width:132px; height:auto; }
     .stream-link:hover,
     .stream-link:focus-visible {
-      background:#EA580C;
-      color:white;
-      box-shadow:0 10px 22px rgba(234, 88, 12, 0.24);
-      transform:translateY(-2px);
+      background:var(--amber);
+      color:var(--ink);
+      box-shadow:0 5px 12px rgba(43, 26, 16, 0.1);
     }
     .stream-link:hover img,
     .stream-link:focus-visible img {
-      filter:brightness(0) invert(1);
+      filter:brightness(.5);
     }
     .lyrics-panel {
-      background:linear-gradient(180deg, rgba(255,255,255,0.52), rgba(255,250,246,0.7));
-      border:1px solid rgba(235,217,194,0.9);
-      border-radius:18px;
+      background:var(--paper);
+      border:1px solid var(--sand);
+      border-radius:12px;
       padding:1.15rem 1.2rem;
       line-height:1.8;
-      white-space:pre-line;
-      box-shadow:inset 0 1px 0 rgba(255,255,255,0.6);
     }
     .lyrics-text, .lyrics-empty { margin:0; white-space:pre-wrap; }
     .lyrics-empty { color:var(--muted); font-style:italic; }

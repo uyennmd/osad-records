@@ -1,0 +1,22 @@
+---
+interface Props {
+  currentPage?: number;
+  totalItems: number;
+  pageSize: number;
+}
+
+const { currentPage = 1, totalItems, pageSize } = Astro.props;
+const pageCount = Math.max(1, Math.ceil(totalItems / pageSize));
+---
+<nav class="pagination" data-pagination aria-label="Phân trang">
+  {Array.from({ length: pageCount }, (_, index) => (
+    <button
+      type="button"
+      data-page={index + 1}
+      aria-current={index + 1 === currentPage ? 'page' : undefined}
+      class={index + 1 === currentPage ? 'current' : undefined}
+    >
+      {index + 1}
+    </button>
+  ))}
+</nav>

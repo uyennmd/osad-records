@@ -1,3 +1,3 @@
-slug,title,releaseDate,album,cover,lyricsUrl,lyrics,type,mainArtist,partner_1,partner_2,partner_3,link_Spotify,link_Apple Music,link_YouTube Music,credit_Sáng tác,credit_Phối khí
-vi-du-bai-hat,Ví dụ bài hát,2024-05-01,Album ví dụ,https://example.com/cover.jpg,,,"Ví dụ lời bài hát, có dấu phẩy
-và xuống dòng.",guest,OSAD,Nghệ sĩ khách mời,,,https://open.spotify.com/track/example,https://music.apple.com/us/song/example,https://music.youtube.com/watch?v=example,OSAD,Nhà sản xuất ví dụ
+slug,title,releaseDate,album,cover,lyricsUrl,lyrics,notes,type,mainArtist,partner_1,partner_2,partner_3,link_Spotify,link_Apple Music,link_YouTube Music,link_YouTube,credit_Sáng tác,credit_Viết lời,credit_Phối khí,credit_Sản xuất
+vi-du-bai-hat,Ví dụ bài hát,2024-05-01,Album ví dụ,,,"Ví dụ lời bài hát, có dấu phẩy
+và xuống dòng.",Ghi chú có thể nhiều dòng.,solo,,,,,https://open.spotify.com/track/example,https://music.apple.com/us/song/example,https://music.youtube.com/watch?v=dQw4w9WgXcQ,https://youtu.be/dQw4w9WgXcQ,OSAD,OSAD,Nhà sản xuất ví dụ,Nhà sản xuất ví dụ

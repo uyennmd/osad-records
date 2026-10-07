@@ -1,12 +1,20 @@
 import { defineCollection, z } from 'astro:content';
 import { glob } from 'astro/loaders';
-import { getGoogleSheetsConfig, googleSheetsLoader } from './lib/sheet';
+import eventsData from './data/events.json';
+import journeyData from './data/journey.json';
+import {
+  getGoogleSheetsId,
+  googleSheetsEventsLoader,
+  googleSheetsJourneyLoader,
+  googleSheetsSongsLoader,
+  staticDataLoader,
+} from './lib/sheet';
 
-const sheetsConfig = getGoogleSheetsConfig();
+const sheetsId = getGoogleSheetsId();
 
 const songs = defineCollection({
-  loader: sheetsConfig
-    ? googleSheetsLoader(sheetsConfig)
+  loader: sheetsId
+    ? googleSheetsSongsLoader(sheetsId)
     : glob({ pattern: '**/*.md', base: './src/content/songs' }),
   schema: z.object({
     title: z.string(),
@@ -16,8 +24,9 @@ const songs = defineCollection({
     links: z.array(z.object({ platform: z.string(), url: z.string().url() })).default([]),
     credits: z.array(z.object({ role: z.string(), name: z.string() })).default([]),
     lyrics: z.string().optional(),
+    notes: z.string().optional(),
     lyricsUrl: z.string().url().optional(), // khuyên dùng link thay vì đăng lời (bản quyền)
-    type: z.enum(['solo', 'guest', 'featured', 'collab', 'other']).optional(),
+    type: z.enum(['solo', 'collab', 'featured', 'other']).optional(),
     mainArtist: z.string().optional(),
     partner_1: z.string().optional(),
     partner_2: z.string().optional(),
@@ -25,4 +34,32 @@ const songs = defineCollection({
   }),
 });
 
-export const collections = { songs };
+const journey = defineCollection({
+  loader: sheetsId
+    ? googleSheetsJourneyLoader(sheetsId)
+    : staticDataLoader('journey', journeyData, item => String(item.slug)),
+  schema: z.object({
+    slug: z.string().optional(),
+    title: z.string(),
+    date: z.string(),
+    type: z.enum(['interview', 'event', 'performance', 'other']),
+    url: z.string().optional(),
+    source: z.string().optional(),
+    thumbnail: z.string().optional(),
+    notes: z.string().optional(),
+  }),
+});
+
+const events = defineCollection({
+  loader: sheetsId
+    ? googleSheetsEventsLoader(sheetsId)
+    : staticDataLoader('events', eventsData, (_item, index) => `event-${index + 1}`),
+  schema: z.object({
+    date: z.string(),
+    title: z.string(),
+    place: z.string().optional(),
+    link: z.string().optional(),
+  }),
+});
+
+export const collections = { songs, journey, events };

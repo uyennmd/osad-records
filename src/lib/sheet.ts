@@ -2,11 +2,6 @@ import { env as processEnv } from 'node:process';
 import { loadEnv } from 'vite';
 import type { Loader } from 'astro/loaders';
 
-type SheetConfig = {
-  id: string;
-  tab: string;
-};
-
 type CsvRecord = {
   values: string[];
   line: number;
@@ -19,7 +14,8 @@ type SongData = {
   cover?: string;
   lyricsUrl?: string;
   lyrics?: string;
-  type?: 'solo' | 'guest' | 'featured' | 'collab' | 'other';
+  notes?: string;
+  type?: 'solo' | 'collab' | 'featured' | 'other';
   mainArtist?: string;
   partner_1?: string;
   partner_2?: string;
@@ -28,23 +24,41 @@ type SongData = {
   credits: Array<{ role: string; name: string }>;
 };
 
-const songTypes = ['solo', 'guest', 'featured', 'collab', 'other'] as const;
+type JourneyData = {
+  title: string;
+  date: string;
+  type: 'interview' | 'event' | 'performance' | 'other';
+  url?: string;
+  source?: string;
+  thumbnail?: string;
+  notes?: string;
+};
+
+type EventData = {
+  date: string;
+  title: string;
+  place?: string;
+  link?: string;
+};
+
+type SheetTab = 'Songs' | 'Journey' | 'Events';
+
+const songTypes = ['solo', 'collab', 'featured', 'other'] as const;
+const journeyTypes = ['interview', 'event', 'performance', 'other'] as const;
 
 function isSongType(value: string): value is NonNullable<SongData['type']> {
   return songTypes.some(type => type === value);
 }
 
-export function getGoogleSheetsConfig(): SheetConfig | undefined {
+function isJourneyType(value: string): value is JourneyData['type'] {
+  return journeyTypes.some(type => type === value);
+}
+
+export function getGoogleSheetsId(): string | undefined {
   const mode = processEnv.NODE_ENV === 'production' ? 'production' : 'development';
   const fileEnv = loadEnv(mode, process.cwd(), 'GOOGLE_SHEETS_');
   const sheetId = (processEnv.GOOGLE_SHEETS_ID ?? fileEnv.GOOGLE_SHEETS_ID)?.trim();
-
-  if (!sheetId) return undefined;
-
-  return {
-    id: sheetId,
-    tab: (processEnv.GOOGLE_SHEETS_TAB ?? fileEnv.GOOGLE_SHEETS_TAB)?.trim() || 'Songs',
-  };
+  return sheetId || undefined;
 }
 
 function parseCsv(csv: string): CsvRecord[] {
@@ -99,7 +113,7 @@ function parseCsv(csv: string): CsvRecord[] {
         if (character === '\r' && csv[index + 1] === '\n') index += 1;
         finishRecord();
         line += 1;
-        recordLine += 1;
+        recordLine = line;
         afterQuote = false;
       } else {
         throw new Error(`CSV không hợp lệ ở dòng ${line}: có ký tự sau dấu ngoặc kép đóng.`);
@@ -119,7 +133,7 @@ function parseCsv(csv: string): CsvRecord[] {
       if (character === '\r' && csv[index + 1] === '\n') index += 1;
       finishRecord();
       line += 1;
-      recordLine += 1;
+      recordLine = line;
     } else {
       field += character;
     }
@@ -128,7 +142,7 @@ function parseCsv(csv: string): CsvRecord[] {
   if (inQuotes) {
     throw new Error(`CSV không hợp lệ ở dòng ${quoteLine}: ô chưa đóng dấu ngoặc kép.`);
   }
-  if (field.length > 0 || fields.length > 0) finishRecord();
+  if (field.length > 0 || fields.length > 0 || afterQuote) finishRecord();
 
   return records.filter(record => record.values.some(value => value.trim() !== ''));
 }
@@ -138,7 +152,7 @@ function optionalCell(value: string | undefined): string | undefined {
   return trimmed || undefined;
 }
 
-function normalizeDate(value: string, rowNumber: number, slug: string): string {
+function normalizeDate(value: string, rowNumber: number, tab: SheetTab): string {
   let year: number;
   let month: number;
   let day: number;
@@ -148,7 +162,7 @@ function normalizeDate(value: string, rowNumber: number, slug: string): string {
   } else if (/^\d{2}\/\d{2}\/\d{4}$/.test(value)) {
     [day, month, year] = value.split('/').map(Number);
   } else {
-    throw new Error(`Dòng ${rowNumber} (slug "${slug}") có releaseDate không hợp lệ: "${value}". Dùng YYYY-MM-DD hoặc DD/MM/YYYY.`);
+    throw new Error(`Tab "${tab}", dòng ${rowNumber}: ngày không hợp lệ "${value}". Dùng YYYY-MM-DD hoặc DD/MM/YYYY.`);
   }
 
   const date = new Date(Date.UTC(year, month - 1, day));
@@ -158,7 +172,7 @@ function normalizeDate(value: string, rowNumber: number, slug: string): string {
     date.getUTCMonth() !== month - 1 ||
     date.getUTCDate() !== day
   ) {
-    throw new Error(`Dòng ${rowNumber} (slug "${slug}") có releaseDate không hợp lệ: "${value}".`);
+    throw new Error(`Tab "${tab}", dòng ${rowNumber}: ngày không hợp lệ "${value}".`);
   }
 
   return date.toISOString().slice(0, 10);
@@ -177,16 +191,46 @@ function columnValues(
   });
 }
 
+function youtubeVideoId(urlValue: string | undefined, platform: string): string | undefined {
+  if (!urlValue) return undefined;
+  const platformName = platform.trim().toLowerCase();
+
+  try {
+    const url = new URL(urlValue);
+    if (platformName === 'youtube music' && url.hostname.toLowerCase() === 'music.youtube.com') {
+      return url.pathname === '/watch' ? url.searchParams.get('v') ?? undefined : undefined;
+    }
+    if (platformName === 'youtube') {
+      if (['youtube.com', 'www.youtube.com', 'm.youtube.com'].includes(url.hostname.toLowerCase())) {
+        return url.pathname === '/watch' ? url.searchParams.get('v') ?? undefined : undefined;
+      }
+      if (url.hostname.toLowerCase() === 'youtu.be') {
+        return url.pathname.split('/').filter(Boolean)[0];
+      }
+    }
+  } catch {
+    return undefined;
+  }
+  return undefined;
+}
+
+function youtubeCover(links: Array<{ platform: string; url: string }>): string | undefined {
+  const youtubeMusic = links.find(link => link.platform.trim().toLowerCase() === 'youtube music');
+  const youtube = links.find(link => link.platform.trim().toLowerCase() === 'youtube');
+  const videoId = youtubeVideoId(youtubeMusic?.url, 'youtube music')
+    ?? youtubeVideoId(youtube?.url, 'youtube');
+  return videoId ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg` : undefined;
+}
+
 function makeSongData(
   headers: string[],
   values: string[],
   rowNumber: number,
-  slug: string,
 ): SongData {
   const row = Object.fromEntries(headers.map((header, index) => [header, values[index] ?? '']));
   const rawType = optionalCell(row.type);
   if (rawType && !isSongType(rawType)) {
-    throw new Error(`Dòng ${rowNumber} (slug "${slug}") có type không hợp lệ: "${rawType}". Giá trị cho phép: solo, guest, featured, collab, other.`);
+    throw new Error(`Tab "Songs", dòng ${rowNumber}: type không hợp lệ "${rawType}". Giá trị cho phép: ${songTypes.join(', ')}.`);
   }
 
   const links = columnValues(headers, values, 'link_').map(({ name, value }) => ({
@@ -197,12 +241,13 @@ function makeSongData(
     role: name,
     name: value,
   }));
+  const cover = optionalCell(row.cover) ?? youtubeCover(links);
 
   for (const link of links) {
     try {
       new URL(link.url);
     } catch {
-      throw new Error(`Dòng ${rowNumber} (slug "${slug}") có URL không hợp lệ ở cột link_${link.platform}: "${link.url}".`);
+      throw new Error(`Tab "Songs", dòng ${rowNumber}: URL không hợp lệ ở cột link_${link.platform}: "${link.url}".`);
     }
   }
 
@@ -211,17 +256,18 @@ function makeSongData(
     try {
       new URL(lyricsUrl);
     } catch {
-      throw new Error(`Dòng ${rowNumber} (slug "${slug}") có lyricsUrl không hợp lệ: "${lyricsUrl}".`);
+      throw new Error(`Tab "Songs", dòng ${rowNumber}: lyricsUrl không hợp lệ "${lyricsUrl}".`);
     }
   }
 
   return {
     title: optionalCell(row.title) ?? '',
-    releaseDate: normalizeDate(optionalCell(row.releaseDate) ?? '', rowNumber, slug),
+    releaseDate: normalizeDate(optionalCell(row.releaseDate) ?? '', rowNumber, 'Songs'),
     album: optionalCell(row.album),
-    cover: optionalCell(row.cover),
+    cover,
     lyricsUrl,
-    lyrics: optionalCell(row.lyrics),
+    lyrics: row.lyrics || undefined,
+    notes: row.notes || undefined,
     type: rawType,
     mainArtist: optionalCell(row.mainArtist),
     partner_1: optionalCell(row.partner_1),
@@ -232,98 +278,172 @@ function makeSongData(
   };
 }
 
-function makeSheetUrl({ id, tab }: SheetConfig): string {
+function makeJourneyData(headers: string[], values: string[], rowNumber: number): JourneyData {
+  const row = Object.fromEntries(headers.map((header, index) => [header, values[index] ?? '']));
+  const type = optionalCell(row.type);
+  if (!type || !isJourneyType(type)) {
+    throw new Error(`Tab "Journey", dòng ${rowNumber}: type không hợp lệ "${type ?? ''}". Giá trị cho phép: ${journeyTypes.join(', ')}.`);
+  }
+
+  const url = optionalCell(row.url);
+  const source = optionalCell(row.source);
+  let thumbnail = optionalCell(row.thumbnail);
+  if (!thumbnail && url) {
+    const videoId = url.match(/(?:youtube\.com\/watch\?[^#]*v=|youtu\.be\/|youtube\.com\/shorts\/)([A-Za-z0-9_-]{11})/)?.[1];
+    if (videoId) thumbnail = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+  }
+
+  return {
+    title: optionalCell(row.title) ?? '',
+    date: normalizeDate(optionalCell(row.date) ?? '', rowNumber, 'Journey'),
+    type,
+    url,
+    source,
+    thumbnail,
+    notes: row.notes || undefined,
+  };
+}
+
+function makeEventData(headers: string[], values: string[], rowNumber: number): EventData {
+  const row = Object.fromEntries(headers.map((header, index) => [header, values[index] ?? '']));
+  return {
+    date: normalizeDate(optionalCell(row.date) ?? '', rowNumber, 'Events'),
+    title: optionalCell(row.title) ?? '',
+    place: optionalCell(row.place),
+    link: optionalCell(row.link),
+  };
+}
+
+function sheetUrl(id: string, tab: SheetTab): string {
   const url = new URL(`https://docs.google.com/spreadsheets/d/${encodeURIComponent(id)}/gviz/tq`);
   url.searchParams.set('tqx', 'out:csv');
   url.searchParams.set('sheet', tab);
   return url.toString();
 }
 
-async function fetchSheetCsv(config: SheetConfig): Promise<string> {
+async function fetchSheetCsv(id: string, tab: SheetTab): Promise<string> {
   let response: Response;
   try {
-    response = await fetch(makeSheetUrl(config));
+    response = await fetch(sheetUrl(id, tab));
   } catch (error) {
-    throw new Error(`Không thể tải Google Sheet (tab "${config.tab}"): ${error instanceof Error ? error.message : String(error)}. Kiểm tra kết nối mạng và quyền xem bằng liên kết.`);
+    throw new Error(`Không thể tải Google Sheets tab "${tab}": ${error instanceof Error ? error.message : String(error)}. Kiểm tra kết nối mạng và quyền xem bằng liên kết.`);
   }
 
   if (!response.ok) {
-    throw new Error(`Không thể tải Google Sheet (tab "${config.tab}", HTTP ${response.status}). Kiểm tra GOOGLE_SHEETS_ID, tên tab và quyền xem "ai có liên kết".`);
+    throw new Error(`Không thể tải Google Sheets tab "${tab}" (HTTP ${response.status}). Kiểm tra GOOGLE_SHEETS_ID, tên tab và quyền xem "ai có liên kết".`);
   }
 
   const csv = await response.text();
   if (/^\s*(?:<!doctype html|<html|google\.visualization\.query\.setresponse)/i.test(csv)) {
-    throw new Error(`Google Sheets không trả về CSV cho tab "${config.tab}". Kiểm tra ID, tên tab và bật quyền xem "ai có liên kết".`);
+    throw new Error(`Google Sheets không trả về CSV cho tab "${tab}". Kiểm tra ID, tên tab và bật quyền xem "ai có liên kết".`);
   }
   return csv;
 }
 
-export function googleSheetsLoader(config: SheetConfig): Loader {
+function sheetLoader<T>(
+  id: string,
+  tab: SheetTab,
+  requiredHeaders: string[],
+  makeData: (headers: string[], values: string[], rowNumber: number) => T,
+  hasSlug: boolean,
+): Loader {
   return {
-    name: 'google-sheets-songs-loader',
+    name: `google-sheets-${tab.toLowerCase()}-loader`,
     async load({ store, parseData, generateDigest }) {
       store.clear();
 
-      const csv = await fetchSheetCsv(config);
+      const csv = await fetchSheetCsv(id, tab);
       let records: CsvRecord[];
       try {
         records = parseCsv(csv);
       } catch (error) {
-        throw new Error(`Không thể đọc Google Sheet (tab "${config.tab}"): ${error instanceof Error ? error.message : String(error)}`);
+        throw new Error(`Không thể đọc Google Sheets tab "${tab}": ${error instanceof Error ? error.message : String(error)}`);
       }
 
       const headerRecord = records[0];
       if (!headerRecord) {
-        throw new Error(`Google Sheet (tab "${config.tab}") không có dữ liệu. Cần dòng tiêu đề và ít nhất một bài hát.`);
+        throw new Error(`Google Sheets tab "${tab}" không có dòng tiêu đề.`);
       }
-
       const headers = headerRecord.values.map(header => header.trim());
-      for (const required of ['slug', 'title']) {
+      for (const required of requiredHeaders) {
         if (!headers.includes(required)) {
-          throw new Error(`Dòng ${headerRecord.line} (tiêu đề) trong tab "${config.tab}" thiếu cột bắt buộc "${required}". Kiểm tra tên tab và dòng tiêu đề.`);
+          throw new Error(`Google Sheets tab "${tab}", dòng ${headerRecord.line}: thiếu cột bắt buộc "${required}".`);
         }
       }
       const duplicateHeader = headers.find((header, index) => headers.indexOf(header) !== index);
       if (duplicateHeader) {
-        throw new Error(`Dòng ${headerRecord.line} trong tab "${config.tab}" có cột bị trùng: "${duplicateHeader}".`);
+        throw new Error(`Google Sheets tab "${tab}", dòng ${headerRecord.line}: cột bị trùng "${duplicateHeader}".`);
       }
 
-      let songCount = 0;
+      let entryCount = 0;
       const seenSlugs = new Set<string>();
       for (const record of records.slice(1)) {
         const values = headers.map((_, index) => record.values[index] ?? '');
-        const slug = optionalCell(values[headers.indexOf('slug')]);
-        if (!slug) continue;
+        const slug = hasSlug ? optionalCell(values[headers.indexOf('slug')]) : undefined;
+        if (hasSlug && !slug) continue;
 
-        if (!/^[a-z0-9-]+$/.test(slug)) {
-          throw new Error(`Dòng ${record.line} có slug không hợp lệ: "${slug}". Chỉ dùng chữ thường a-z, chữ số 0-9 và dấu gạch ngang.`);
+        if (slug && !/^[a-z0-9-]+$/.test(slug)) {
+          throw new Error(`Google Sheets tab "${tab}", dòng ${record.line}: slug không hợp lệ "${slug}". Chỉ dùng chữ thường a-z, chữ số 0-9 và dấu gạch ngang.`);
         }
-        if (seenSlugs.has(slug)) {
-          throw new Error(`Dòng ${record.line} có slug bị trùng: "${slug}".`);
+        if (slug && seenSlugs.has(slug)) {
+          throw new Error(`Google Sheets tab "${tab}", dòng ${record.line}: slug bị trùng "${slug}".`);
         }
-        seenSlugs.add(slug);
+        if (slug) seenSlugs.add(slug);
+
+        if (tab === 'Events' && !optionalCell(values[headers.indexOf('date')])) continue;
 
         const title = optionalCell(values[headers.indexOf('title')]);
         if (!title) {
-          throw new Error(`Dòng ${record.line} (slug "${slug}") thiếu title.`);
+          throw new Error(`Google Sheets tab "${tab}", dòng ${record.line}${slug ? ` (slug "${slug}")` : ''}: thiếu title.`);
         }
 
-        const data = makeSongData(headers, values, record.line, slug);
+        const data = makeData(headers, values, record.line);
+        const idValue = slug ?? `event-${entryCount + 1}`;
         try {
-          const parsedData = await parseData({ id: slug, data });
+          const parsedData = await parseData({ id: idValue, data });
           store.set({
-            id: slug,
+            id: idValue,
             data: parsedData,
             digest: generateDigest(data),
           });
         } catch (error) {
-          throw new Error(`Dòng ${record.line} (slug "${slug}") không hợp lệ theo schema bài hát: ${error instanceof Error ? error.message : String(error)}`);
+          throw new Error(`Google Sheets tab "${tab}", dòng ${record.line}${slug ? ` (slug "${slug}")` : ''}: dữ liệu không hợp lệ theo schema: ${error instanceof Error ? error.message : String(error)}`);
         }
-        songCount += 1;
+        entryCount += 1;
       }
 
-      if (songCount === 0) {
-        throw new Error(`Google Sheet (tab "${config.tab}") không có bài hát nào. Cần ít nhất một dòng có slug để tránh build site rỗng.`);
+      if (tab !== 'Events' && entryCount === 0) {
+        throw new Error(`Google Sheets tab "${tab}" không có dòng dữ liệu hợp lệ. Cần ít nhất một dòng có slug.`);
+      }
+    },
+  };
+}
+
+export function googleSheetsSongsLoader(id: string): Loader {
+  return sheetLoader(id, 'Songs', ['slug', 'title', 'releaseDate'], makeSongData, true);
+}
+
+export function googleSheetsJourneyLoader(id: string): Loader {
+  return sheetLoader(id, 'Journey', ['slug', 'title', 'date', 'type'], makeJourneyData, true);
+}
+
+export function googleSheetsEventsLoader(id: string): Loader {
+  return sheetLoader(id, 'Events', ['date', 'title'], makeEventData, false);
+}
+
+export function staticDataLoader(
+  name: string,
+  items: Array<Record<string, unknown>>,
+  getId: (item: Record<string, unknown>, index: number) => string,
+): Loader {
+  return {
+    name: `${name}-static-loader`,
+    async load({ store, parseData, generateDigest }) {
+      store.clear();
+      for (const [index, item] of items.entries()) {
+        const id = getId(item, index);
+        const parsedData = await parseData({ id, data: item });
+        store.set({ id, data: parsedData, digest: generateDigest(item) });
       }
     },
   };

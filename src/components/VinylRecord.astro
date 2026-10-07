@@ -1,0 +1,22 @@
+---
+interface Props {
+  cover?: string;
+  alt: string;
+  loading?: 'eager' | 'lazy';
+}
+
+const { cover, alt, loading = 'lazy' } = Astro.props;
+const isYoutubeCover = cover?.startsWith('https://img.youtube.com/vi/') ?? false;
+---
+<div class="album-vinyl">
+  {cover && (
+    <img
+      class="album-art"
+      src={cover}
+      alt={alt}
+      loading={loading}
+      onerror={isYoutubeCover ? "if (this.src.includes('/maxresdefault.jpg')) { this.src = this.src.replace('/maxresdefault.jpg', '/mqdefault.jpg'); } else { this.hidden = true; this.nextElementSibling.hidden = false; }" : "this.hidden = true; this.nextElementSibling.hidden = false;"}
+    />
+  )}
+  <span class="album-art-fallback" hidden={Boolean(cover)}></span>
+</div>
