@@ -1,4 +1,5 @@
 ---
+import Analytics from '@vercel/analytics/astro';
 import '../styles/global.css';
 import VinylDisc from '../components/VinylDisc.astro';
 import { ClientRouter } from 'astro:transitions';
@@ -75,5 +76,6 @@ const on = (h: string) => (h === '/' ? path === '/' : path.startsWith(h));
       initializeNavigationMenus();
       document.addEventListener('astro:page-load', initializeNavigationMenus);
     </script>
+    <Analytics />
   </body>
 </html>
