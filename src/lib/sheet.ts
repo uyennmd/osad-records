@@ -1,6 +1,7 @@
 import { env as processEnv } from 'node:process';
 import { loadEnv } from 'vite';
 import type { Loader } from 'astro/loaders';
+import { parseArtistCell } from './artists';
 
 type CsvRecord = {
   values: string[];
@@ -16,10 +17,8 @@ type SongData = {
   lyrics?: string;
   notes?: string;
   type?: 'solo' | 'collab' | 'featured' | 'other';
-  mainArtist?: string;
-  partner_1?: string;
-  partner_2?: string;
-  partner_3?: string;
+  artistDisplay?: string;
+  artists: string[];
   links: Array<{ platform: string; url: string }>;
   credits: Array<{ role: string; name: string }>;
 };
@@ -241,6 +240,7 @@ function makeSongData(
     role: name,
     name: value,
   }));
+  const artists = parseArtistCell(row.artists ?? '');
   const cover = optionalCell(row.cover) ?? youtubeCover(links);
 
   for (const link of links) {
@@ -269,10 +269,8 @@ function makeSongData(
     lyrics: row.lyrics || undefined,
     notes: row.notes || undefined,
     type: rawType,
-    mainArtist: optionalCell(row.mainArtist),
-    partner_1: optionalCell(row.partner_1),
-    partner_2: optionalCell(row.partner_2),
-    partner_3: optionalCell(row.partner_3),
+    artistDisplay: row.artistDisplay.trim() ? row.artistDisplay : undefined,
+    artists,
     links,
     credits,
   };

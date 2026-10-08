@@ -35,7 +35,9 @@ Chia sẻ Sheet ở quyền Viewer cho bất kỳ ai có liên kết. Trên Verc
 trường cần deploy.
 
 - `Songs`: bài hát, link nghe nhạc và credit. `type` hợp lệ: `solo`, `collab`,
-  `featured`, `other`.
+  `featured`, `other`; dùng `artistDisplay` để đặt chuỗi nghệ sĩ hiển thị tùy ý
+  hoặc `artists` để lưu danh sách tên (mỗi tên một dòng hoặc phân cách bằng
+  dấu `;`).
 - `Journey`: phỏng vấn, sự kiện, biểu diễn và các mục hành trình. `type` hợp
   lệ: `interview`, `event`, `performance`, `other`.
 - `Events`: sự kiện dùng ở trang chủ và Lịch trình.

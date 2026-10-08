@@ -43,10 +43,17 @@ Dòng đầu mỗi tab là tiêu đề. Tên cột và tên tab phân biệt ch�
 | `lyrics` | Không | Lời bài hát; giữ nguyên xuống dòng |
 | `notes` | Không | Ghi chú; giữ nguyên xuống dòng |
 | `type` | Không | `solo`, `collab`, `featured` hoặc `other`; để trống tương đương chưa phân loại |
-| `mainArtist` | Không | Nghệ sĩ chính, dùng cho `featured` và `other` |
-| `partner_1` | Không | Nghệ sĩ hợp tác |
-| `partner_2` | Không | Nghệ sĩ hợp tác bổ sung |
-| `partner_3` | Không | Nghệ sĩ hợp tác bổ sung |
+| `artistDisplay` | Không | Chuỗi nghệ sĩ tùy ý; nếu có sẽ được hiển thị nguyên văn |
+| `artists` | Không | Danh sách nghệ sĩ, mỗi tên một dòng trong ô hoặc phân cách bằng `;` |
+
+Khi đọc `artists`, khoảng trắng đầu/cuối từng tên được loại bỏ; tên rỗng và tên
+trùng nhau (không phân biệt hoa thường) bị bỏ qua. Nếu `artistDisplay` trống,
+website tự tạo chuỗi hiển thị từ danh sách: bỏ tên `OSAD` không phân biệt hoa
+thường, thêm tiền tố `OSAD x`, tối đa ba tên và `+N` nếu còn tên khác. `type`
+chỉ dùng để phân loại và lọc, không ảnh hưởng đến chuỗi nghệ sĩ.
+
+`artistDisplay` luôn được ưu tiên nguyên văn ở giao diện. Tìm kiếm theo nghệ sĩ
+vẫn xét cả `artistDisplay` và toàn bộ danh sách `artists`.
 
 Ngoài các cột trên, thêm tùy ý các cột có tiền tố:
 

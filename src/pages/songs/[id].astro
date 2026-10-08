@@ -3,8 +3,8 @@ import Base from '../../layouts/Base.astro';
 import { render } from 'astro:content';
 import Badge from '../../components/Badge.astro';
 import VinylDisc from '../../components/VinylDisc.astro';
-import { getSongs, fmtDate } from '../../lib/songs';
-import { getArtistDisplay } from '../../lib/songs';
+import { getSongs, fmtDate, getArtistDisplay } from '../../lib/songs';
+import { getArtistChips } from '../../lib/artists';
 import { getPlatformConfig } from '../../lib/platforms';
 export async function getStaticPaths() {
   const songs = await getSongs();
@@ -15,6 +15,9 @@ const { Content } = typeof song.body === 'string' ? await render(song) : { Conte
 const d = song.data;
 const hasLyrics = Boolean(d.lyrics?.trim() || song.body?.trim());
 const artistDisplay = getArtistDisplay(d);
+const artistChips = getArtistChips(d.artists).filter(artist =>
+  !(d.artists.length === 1 && d.artistDisplay === d.artists[0]),
+);
 const releaseYear = d.releaseDate.getFullYear();
 const typeLabels = { solo: 'Solo', collab: 'Collab', featured: 'Featured', other: 'Other' };
 ---
@@ -54,7 +57,12 @@ const typeLabels = { solo: 'Solo', collab: 'Collab', featured: 'Featured', other
 
       <div class="info-item artist-card">
         <dt>Nghệ sĩ</dt>
-        <dd>{artistDisplay || 'Chưa cập nhật'}</dd>
+        <dd>{artistDisplay}</dd>
+        {artistChips.length > 0 && (
+          <ul class="artist-chips" aria-label="Danh sách nghệ sĩ">
+            {artistChips.map(artist => <li>{artist}</li>)}
+          </ul>
+        )}
       </div>
     </section>
 
@@ -141,7 +149,7 @@ const typeLabels = { solo: 'Solo', collab: 'Collab', featured: 'Featured', other
       min-height:108px;
     }
     .artist-card {
-      min-height:128px;
+      padding:18px 22px;
       background:var(--paper);
     }
     .info-item dt {
@@ -163,6 +171,8 @@ const typeLabels = { solo: 'Solo', collab: 'Collab', featured: 'Featured', other
       font-size:1.06rem;
       line-height:1.8;
     }
+    .artist-chips { display:flex; flex-wrap:wrap; gap:8px; margin:.7rem 0 0; padding:0; list-style:none; }
+    .artist-chips li { padding:.25rem .65rem; border:1px solid #EBD9C2; border-radius:999px; background:#FFF6EA; font-size:14px; font-weight:500; line-height:1.4; }
     .cover {
       width:180px;
       height:180px;

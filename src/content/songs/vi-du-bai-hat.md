@@ -3,6 +3,10 @@ title: "Ví dụ bài hát"
 releaseDate: 2024-05-01
 album: "Album ví dụ"
 cover: "https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=900&q=80"
+type: solo
+artistDisplay: "OSAD"
+artists:
+  - "OSAD"
 links:
   - { platform: "Spotify", url: "https://open.spotify.com/track/TRACK_ID" }
   - { platform: "Apple Music", url: "https://music.apple.com/us/song/SONG_ID" }

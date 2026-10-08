@@ -2,6 +2,7 @@ import { defineCollection, z } from 'astro:content';
 import { glob } from 'astro/loaders';
 import eventsData from './data/events.json';
 import journeyData from './data/journey.json';
+import { normalizeArtists } from './lib/artists';
 import {
   getGoogleSheetsId,
   googleSheetsEventsLoader,
@@ -27,10 +28,8 @@ const songs = defineCollection({
     notes: z.string().optional(),
     lyricsUrl: z.string().url().optional(), // khuyên dùng link thay vì đăng lời (bản quyền)
     type: z.enum(['solo', 'collab', 'featured', 'other']).optional(),
-    mainArtist: z.string().optional(),
-    partner_1: z.string().optional(),
-    partner_2: z.string().optional(),
-    partner_3: z.string().optional(),
+    artistDisplay: z.string().optional(),
+    artists: z.array(z.string()).default([]).transform(normalizeArtists),
   }),
 });
 

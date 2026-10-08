@@ -6,6 +6,7 @@ import Pagination from '../../components/Pagination.astro';
 import VinylDisc from '../../components/VinylDisc.astro';
 import Base from '../../layouts/Base.astro';
 import { getArtistDisplay } from '../../lib/songs';
+import { getListArtistDisplay } from '../../lib/artists';
 
 const songs = (await getCollection('songs')).sort(
   (first, second) => +second.data.releaseDate - +first.data.releaseDate,
@@ -53,7 +54,8 @@ const selectedView = Astro.url.searchParams.get('view') === 'list' ? 'list' : 'g
                 const data = song.data;
                 const releaseYear = data.releaseDate.getFullYear();
                 const artist = getArtistDisplay(data);
-                const searchable = [data.title, data.album, artist].filter(Boolean).join(' ');
+                const listArtist = getListArtistDisplay(data.artists);
+                const searchable = [data.title, data.album, data.artistDisplay, ...data.artists].filter(Boolean).join(' ');
                 const typeLabel = types.find(type => type.value === data.type)?.label ?? '';
                 return (
                   <article
@@ -73,7 +75,7 @@ const selectedView = Astro.url.searchParams.get('view') === 'list' ? 'list' : 'g
                       </a>
                       <div class="song-grid-meta">
                         <h3 class="song-grid-title"><a href={`/songs/${song.id}`}>{data.title}</a></h3>
-                        <p class="song-grid-artist" title={artist}>{artist || '\u00a0'}</p>
+                        <p class="song-grid-artist" title={data.artists.join(', ') || artist}>{artist || '\u00a0'}</p>
                         <div class="song-grid-topline">
                           {typeLabel && <Badge kind="type" label={typeLabel} />}
                           <Badge kind="year" label={String(releaseYear)} />
@@ -86,7 +88,7 @@ const selectedView = Astro.url.searchParams.get('view') === 'list' ? 'list' : 'g
                       </a>
                       <div class="list-song-copy">
                         <h3><a href={`/songs/${song.id}`}>{data.title}</a></h3>
-                        {artist && <p class="song-artist">{artist}</p>}
+                        <p class="song-artist">{listArtist}</p>
                       </div>
                       <div class="list-song-type">{typeLabel && <Badge kind="type" label={typeLabel} />}</div>
                       <div class="list-song-year"><Badge kind="year" label={String(releaseYear)} /></div>
@@ -135,7 +137,7 @@ const selectedView = Astro.url.searchParams.get('view') === 'list' ? 'list' : 'g
     .song-grid-title { min-width:0; max-width:100%; display:-webkit-box; overflow:hidden; font-weight:700; line-height:1.2; text-align:center; overflow-wrap:anywhere; -webkit-box-orient:vertical; -webkit-line-clamp:2; line-clamp:2; }
     .song-grid-meta h3 a, .list-song-copy h3 a { color:var(--ink); text-decoration:none; }
     .song-grid-meta h3 a:hover, .list-song-copy h3 a:hover { color:var(--amber-d); }
-    .song-artist { margin:.1rem 0 .35rem; color:var(--muted); font-size:.75rem; line-height:1.35; }
+    .song-artist { margin:.1rem 0 .35rem; color:var(--muted); font-size:.75rem; line-height:1.35; white-space:normal; overflow-wrap:anywhere; }
     .song-grid-artist { width:100%; margin:0; overflow:hidden; color:var(--muted); font-size:.75rem; line-height:1.15rem; text-align:center; text-overflow:ellipsis; white-space:nowrap; }
     .song-grid-topline .badge { flex:none; white-space:nowrap; }
     .song-groups.list-view { display:block; }
@@ -152,7 +154,7 @@ const selectedView = Astro.url.searchParams.get('view') === 'list' ? 'list' : 'g
     .list-cover .album-vinyl { width:56px; box-shadow:0 3px 6px rgba(43,26,16,.3); }
     .list-song-copy { min-width:0; flex:1 1 auto; }
     .list-song-copy h3 { overflow-wrap:anywhere; }
-    .list-song-type, .list-song-year { width:78px; flex:none; text-align:center; }
+    .list-song-type, .list-song-year { width:78px; flex:none; align-self:center; text-align:center; }
     .empty-filtered { margin-top:1rem; }
     .empty-filtered p { margin:0 0 .8rem; }
     @media (max-width:900px) {
@@ -163,7 +165,6 @@ const selectedView = Astro.url.searchParams.get('view') === 'list' ? 'list' : 'g
       .song-grid-content { padding:8px; }
       .song-grid-meta h3 { font-size:.82rem; }
       .song-groups.list-view .song-list-content { gap:8px; padding:8px; }
-      .list-song-type, .list-song-year { width:auto; }
     }
   </style>
 </Base>

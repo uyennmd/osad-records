@@ -2,7 +2,7 @@
 import { getCollection } from 'astro:content';
 import Badge from '../components/Badge.astro';
 import Base from '../layouts/Base.astro';
-import { getSongs, fmtDate } from '../lib/songs';
+import { getSongs, fmtDate, getArtistDisplay } from '../lib/songs';
 
 const songs = await getSongs();
 const latestSongs = [...songs].sort(
@@ -30,6 +30,7 @@ const songTypeLabels = { solo: 'Solo', collab: 'Collab', featured: 'Featured', o
         <a class="ticket" href={`/songs/${latest.id}`}>
           <span class="ticket-kicker">Phát hành mới nhất</span>
           <strong class="ticket-title">{latest.data.title}</strong>
+          <span class="ticket-subtitle">{getArtistDisplay(latest.data)}</span>
           <span class="ticket-meta">
             {latest.data.type && <Badge kind="type" label={songTypeLabels[latest.data.type]} />}
             <Badge kind="year" label={String(latest.data.releaseDate.getFullYear())} />
@@ -55,7 +56,9 @@ const songTypeLabels = { solo: 'Solo', collab: 'Collab', featured: 'Featured', o
           <div class="marquee-group" aria-hidden={copy === 1 ? 'true' : undefined}>
             {recentSongs.map((song, index) => (
               <>
-                <a href={`/songs/${song.id}`} tabindex={copy === 1 ? -1 : undefined}>{song.data.title}</a>
+                <a href={`/songs/${song.id}`} tabindex={copy === 1 ? -1 : undefined}>
+                  {song.data.title} — {getArtistDisplay(song.data)}
+                </a>
                 {index < recentSongs.length - 1 && <span class="marquee-dot" aria-hidden="true">•</span>}
               </>
             ))}
