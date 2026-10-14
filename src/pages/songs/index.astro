@@ -6,7 +6,7 @@ import Pagination from '../../components/Pagination.astro';
 import VinylDisc from '../../components/VinylDisc.astro';
 import Base from '../../layouts/Base.astro';
 import { getArtistDisplay } from '../../lib/songs';
-import { getListArtistDisplay } from '../../lib/artists';
+import { getArtistList } from '../../lib/artists';
 
 const songs = (await getCollection('songs')).sort(
   (first, second) => +second.data.releaseDate - +first.data.releaseDate,
@@ -54,7 +54,7 @@ const selectedView = Astro.url.searchParams.get('view') === 'list' ? 'list' : 'g
                 const data = song.data;
                 const releaseYear = data.releaseDate.getFullYear();
                 const artist = getArtistDisplay(data);
-                const listArtist = getListArtistDisplay(data.artists);
+                const listArtist = getArtistList(data.artists).join(', ');
                 const searchable = [data.title, data.album, data.artistDisplay, ...data.artists].filter(Boolean).join(' ');
                 const typeLabel = types.find(type => type.value === data.type)?.label ?? '';
                 return (

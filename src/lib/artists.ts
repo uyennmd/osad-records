@@ -30,18 +30,8 @@ export function getArtistDisplay(song: SongArtistData): string {
   return `OSAD x ${displayedArtists.join(' x ')}${remainingCount > 0 ? ` +${remainingCount}` : ''}`;
 }
 
-export function getListArtistDisplay(artists: string[] = []): string {
-  const normalizedArtists = normalizeArtists(artists);
-  if (!normalizedArtists.some(artist => artist.toLowerCase() === 'osad')) {
-    normalizedArtists.unshift('OSAD');
-  }
-  return normalizedArtists.join(', ');
-}
-
-export function getArtistChips(artists: string[] = []): string[] {
-  return normalizeArtists(artists).sort((first, second) => {
-    if (first.toLowerCase() === 'osad') return second.toLowerCase() === 'osad' ? 0 : -1;
-    if (second.toLowerCase() === 'osad') return 1;
-    return 0;
-  });
+export function getArtistList(artists: string[] = []): string[] {
+  const otherArtists = normalizeArtists(artists)
+    .filter(artist => artist.toLowerCase() !== 'osad');
+  return ['OSAD', ...otherArtists];
 }
